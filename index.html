@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>スクワット姿勢可視化</title>
+  </head>
+  <body>
+    <div id="app">
+      <section class="stage">
+        <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="readout" id="readout"></div>
+      </section>
+
+      <section class="controls">
+        <div class="row row-buttons">
+          <div class="seg" id="bar" role="group" aria-label="担ぎ位置">
+            <button data-v="high">ハイバー</button>
+            <button data-v="low">ローバー</button>
+          </div>
+          <div class="seg" id="shoe" role="group" aria-label="靴">
+            <button data-v="flat">フラット</button>
+            <button data-v="running">20mm</button>
+            <button data-v="lifting">LS</button>
+          </div>
+          <div class="seg presets" id="presets" role="group" aria-label="体型プリセット"></div>
+        </div>
+
+        <div class="row sliders" id="mainSliders"></div>
+
+        <details id="bodyDetails">
+          <summary>体格を調整</summary>
+          <div class="sliders" id="bodySliders"></div>
+        </details>
+
+        <div class="row row-buttons">
+          <button class="wide" id="freeze">体格を固定</button>
+          <div class="seg" id="layout" role="group" aria-label="比較レイアウト" hidden>
+            <button data-v="overlay">重ねる</button>
+            <button data-v="side">並べる</button>
+          </div>
+          <button class="ghostbtn" id="notesBtn" aria-expanded="false">注記</button>
+        </div>
+      </section>
+
+      <aside id="notes" hidden>
+        <button id="notesClose" aria-label="閉じる">×</button>
+        <ul>
+          <li>バーではなく、身体＋バーの合成重心が中足部の上にあるのが正確な条件。高重量ではバー位置で近似できる。</li>
+          <li>上体は1本の棒として扱っている（実際は腰椎・胸椎で角度が分散する）。</li>
+          <li>スタンス幅を広げたり股関節を外旋させると、矢状面では大腿骨が短くなったのと同じ効果が出る。この図では表現していないが、実際の解決策としては有効。</li>
+          <li>靴のヒールは最適な傾き量を変えるのではなく、その脛角度に<strong>届くかどうか</strong>を変える。</li>
+          <li>ローバーは前傾を<strong>減らすのではなく増やす</strong>。買っているのは「脛を立てたままバランスが取れること」で、対価が前傾と股関節・背部の負担。大腿が長い人ほどこの増分は大きい。</li>
+          <li>身長そのものは上体角度に影響しない。効くのは<strong>セグメントの比率だけ</strong>で、比率が同じなら大柄でも小柄でも答えは変わらない。</li>
+          <li>傾きの大きさは体格による最適解であり、フォームの優劣ではない。</li>
+        </ul>
+      </aside>
+    </div>
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>

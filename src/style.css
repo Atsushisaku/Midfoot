@@ -1,0 +1,334 @@
+:root {
+  --fg: #1f2933;
+  --muted: #6b7280;
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --border: #d8dde3;
+  --accent: #1f7a8c;
+  --accent-soft: #e3f0f3;
+  --bodyA: #1f7a8c;
+  --bodyB: #7b5ea7;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'Hiragino Sans',
+    'Noto Sans JP',
+    sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* --- 図 ------------------------------------------------------------------ */
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#fig {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 数値表示は上体角度ひとつだけ（§6） */
+.readout {
+  position: absolute;
+  right: 24px;
+  bottom: 14px;
+  display: flex;
+  gap: 26px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.readout .item {
+  text-align: right;
+  line-height: 1;
+}
+
+.readout .cap {
+  font-size: 13px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.readout .val {
+  font-size: 46px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.readout .val .deg {
+  font-size: 24px;
+  margin-left: 1px;
+}
+
+/* --- コントロール -------------------------------------------------------- */
+
+.controls {
+  flex: 0 0 auto;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* [hidden] が .seg / .slider の display に負けないようにする */
+[hidden] {
+  display: none !important;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 15px;
+  padding: 9px 16px;
+  min-height: 42px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seg button + button {
+  border-left: 1px solid var(--border);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+
+.seg.presets button {
+  font-size: 14px;
+  padding: 9px 12px;
+}
+
+.seg.presets button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+button.wide,
+button.ghostbtn {
+  appearance: none;
+  font: inherit;
+  font-size: 15px;
+  min-height: 42px;
+  padding: 9px 18px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button.wide[data-on='true'] {
+  background: var(--bodyB);
+  border-color: var(--bodyB);
+  color: #fff;
+}
+
+button.ghostbtn {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+/* --- スライダー ---------------------------------------------------------- */
+
+.sliders {
+  display: flex;
+  gap: 20px;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 200px;
+  min-width: 170px;
+}
+
+.slider > span {
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.slider input {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  height: 30px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 既定のフォーカス枠はトラック全体を黒く囲って目立ちすぎるので、つまみ側に出す */
+.slider input:focus {
+  outline: none;
+}
+
+.slider input:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.25),
+    0 0 0 3px rgb(31 122 140 / 0.35);
+}
+
+.slider input:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.25),
+    0 0 0 3px rgb(31 122 140 / 0.35);
+}
+
+.slider input::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 3px;
+  background: #dfe4e9;
+}
+
+.slider input::-webkit-slider-thumb {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+.slider input::-moz-range-track {
+  height: 5px;
+  border-radius: 3px;
+  background: #dfe4e9;
+}
+
+.slider input::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+details {
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+}
+
+summary {
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+}
+
+details[open] summary {
+  margin-bottom: 4px;
+}
+
+/* --- 注記 ---------------------------------------------------------------- */
+
+/* 図の右上に出す。下に出すと操作パネルと上体角度の表示を覆ってしまう */
+#notes {
+  position: fixed;
+  inset: 16px 16px auto auto;
+  max-width: 460px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 34px 22px 14px;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.14);
+  z-index: 10;
+}
+
+#notes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+#notes li {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #414b56;
+  margin-bottom: 8px;
+}
+
+#notesClose {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+@media (max-height: 620px) {
+  .readout .val {
+    font-size: 36px;
+  }
+  .controls {
+    padding: 8px 14px 10px;
+  }
+}
