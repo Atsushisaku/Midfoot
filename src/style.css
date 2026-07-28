@@ -1,13 +1,14 @@
+/* スカイブルー × コーラル（Rev.8）。アクセントは体A の色に連動 */
 :root {
-  --fg: #1f2933;
-  --muted: #6b7280;
-  --bg: #f4f6f8;
+  --fg: #26313c;
+  --muted: #6b7480;
+  --bg: #fbfcfe;
   --panel: #ffffff;
-  --border: #d8dde3;
-  --accent: #1f7a8c;
-  --accent-soft: #e3f0f3;
-  --bodyA: #1f7a8c;
-  --bodyB: #7b5ea7;
+  --border: #dde3ea;
+  --accent: #3b9de8;
+  --accent-soft: #e8f3fc;
+  --bodyA: #3b9de8;
+  --bodyB: #ff8a66;
   color-scheme: light;
 }
 

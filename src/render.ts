@@ -51,15 +51,19 @@ const BAR_R = 0.032
 const JOINT_R = 0.021
 const ANKLE_R = 0.016
 
-/** 鼻。どちらを向いているかを示す小さな直角三角形（前方 +x を向く） */
-const NOSE_LEN = 0.036
-const NOSE_HALF = 0.026
+/**
+ * 鼻（Rev.8 で作り直し）。
+ * 頭の円周上の弦を底辺とし、頂点だけが外へ出る小さな白抜き三角形。
+ * 以前は色ベタ塗りの三角が輪郭の内側から生えていて、くちばしに見えた。
+ */
+const NOSE_LEN = 0.03
+const NOSE_SPREAD_DEG = 14
 /**
  * 鼻の向きを上体の傾きにどれだけ追従させるか。
  * 1.0（剛体）だと深いボトムで鼻が真下を向いて壊れて見える。
  * 実際の選手も上体ほどは頭を倒さない（前方の一点を見る）ので、減衰させる。
  */
-const NOSE_FOLLOW = 0.6
+const NOSE_FOLLOW = 0.45
 
 /**
  * 靴のシルエット（Rev.7：足の線を描くのをやめ、靴の形そのものにした）。
@@ -76,13 +80,17 @@ const LIMB_FILL = '#fff'
 
 // --- 色（§6：良し悪しを示唆しない中間色） -----------------------------------
 
+/**
+ * スカイブルー × コーラル（Rev.8 で採用）。
+ * 青×橙は色覚多様性で最も区別しやすい組。警告はコーラルとの混同を避けてバイオレット。
+ */
 export const COLORS = {
-  bodyA: '#1f7a8c',
-  bodyB: '#7b5ea7',
-  ghost: '#ced4da',
-  floor: '#8b939c',
-  midline: '#7a828b',
-  warn: '#a26b00',
+  bodyA: '#3b9de8',
+  bodyB: '#ff8a66',
+  ghost: '#d3dae1',
+  floor: '#9aa5ae',
+  midline: '#9aa5ae',
+  warn: '#7c3aed',
 } as const
 
 // ---------------------------------------------------------------------------
@@ -188,22 +196,30 @@ function drawFigure(
   const head = P(headModel)
 
   const drawNose = () => {
-    // 直角三角形。下辺が前方に水平、斜辺が鼻筋（直角は顔側の下）
+    // 頭の円周上の弦を底辺に、頂点だけが外へ出る白抜きの三角。
+    // 頭の後に描くので、白い塗りが弦の内側の輪郭線を消し、頭と一体に見える
     const nt = t * NOSE_FOLLOW
-    const fwd: Vec = { x: Math.cos(nt), y: -Math.sin(nt) }
-    const side: Vec = { x: Math.sin(nt), y: Math.cos(nt) }
-    const at = (f: number, s: number) =>
-      P({ x: headModel.x + fwd.x * f + side.x * s, y: headModel.y + fwd.y * f + side.y * s })
-    const root = HEAD_R * 0.9
+    const at = (angleDeg: number, r: number) => {
+      const a = nt + angleDeg * DEG
+      return P({ x: headModel.x + Math.cos(a) * r, y: headModel.y - Math.sin(a) * r })
+    }
     out.push(
-      path([at(root, NOSE_HALF), at(root, 0), at(root + NOSE_LEN, 0), at(root, NOSE_HALF)], {
-        fill: color,
-        'fill-opacity': opts.opacity,
-        stroke: color,
-        'stroke-opacity': opts.opacity,
-        'stroke-width': 1.5,
-        'stroke-linejoin': 'round',
-      }),
+      path(
+        [
+          at(NOSE_SPREAD_DEG, HEAD_R),
+          at(0, HEAD_R + NOSE_LEN),
+          at(-NOSE_SPREAD_DEG, HEAD_R),
+          at(NOSE_SPREAD_DEG, HEAD_R),
+        ],
+        {
+          fill: LIMB_FILL,
+          'fill-opacity': opts.opacity,
+          stroke: color,
+          'stroke-opacity': opts.opacity,
+          'stroke-width': LIMB_WALL,
+          'stroke-linejoin': 'round',
+        },
+      ),
     )
   }
 
