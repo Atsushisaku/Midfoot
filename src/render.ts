@@ -16,13 +16,16 @@ export const VIEW_H = 620
 /** 床の画面 y */
 const FLOOR_Y = 556
 
-/** レイアウトごとのスケールと中足部の画面 x（§6：基準線は常に同じ位置） */
+/**
+ * レイアウトごとのスケールと中足部の画面 x（§6：基準線は常に同じ位置）。
+ * スケールは立位ゴーストの頭頂が画面上端に収まるように決めてある。
+ */
 const CAMERAS = {
-  single: [{ s: 430, midX: 500 }],
-  overlay: [{ s: 430, midX: 500 }],
+  single: [{ s: 410, midX: 500 }],
+  overlay: [{ s: 410, midX: 500 }],
   side: [
-    { s: 360, midX: 272 },
-    { s: 360, midX: 728 },
+    { s: 345, midX: 272 },
+    { s: 345, midX: 728 },
   ],
 } as const
 
@@ -30,11 +33,35 @@ export type Layout = keyof typeof CAMERAS
 
 // --- 描画寸法（モデル単位） ---------------------------------------------------
 
-const HEAD_R = 0.062
-const HEAD_OFFSET = 0.086
+/**
+ * 頭と首。実測の人体比では肩峰から頭頂まで総長比 0.234、頭の半径は 0.083 ある。
+ *
+ * 初版はこれを 0.148 / 0.062 で描いていたため **首が存在せず頭が肩に直接乗り**、
+ * 肩の高さにあるハイバーが「頭のすぐ下＝高すぎる位置」に見えていた。
+ * バーの `r` は解剖学的に正しい値（肩峰 = 1.00）なので、直すべきは頭の側だった。
+ */
+const HEAD_R = 0.078
+const HEAD_OFFSET = 0.15
 const BAR_R = 0.032
 const DOT_R = 0.012
 const MID_MARK_R = 0.013
+
+/** 鼻。どちらを向いているかを示すための三角形（前方 +x を向く） */
+const NOSE_LEN = 0.032
+const NOSE_HALF = 0.022
+/**
+ * 鼻の向きを上体の傾きにどれだけ追従させるか。
+ * 1.0（剛体）だと深いボトムで鼻が真下を向いて壊れて見える。
+ * 実際の選手も上体ほどは頭を倒さない（前方の一点を見る）ので、減衰させる。
+ */
+const NOSE_FOLLOW = 0.6
+
+/**
+ * 靴底の前足部の厚み（総長比）。かかとの高さ h はこれに上乗せされる。
+ * h の側は実寸（20mm / 25mm）なので触らない。視認性はこちらと塗りで稼ぐ。
+ */
+const SOLE_T = 0.011
+const SOLE_FILL = 0.28
 
 // --- 色（§6：良し悪しを示唆しない中間色） -----------------------------------
 
@@ -126,31 +153,44 @@ function drawFigure(
   cam: Cam,
   pose: Pose,
   color: string,
-  opts: { width: number; opacity: number; joints: boolean },
+  opts: { width: number; opacity: number; joints: boolean; foot: boolean },
 ): void {
   const P = (v: Vec) => toScreen(cam, v)
   const g = { stroke: color, opacity: opts.opacity }
   const cap = { 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
 
-  // 足部（かかと → 中足骨頭 → つま先）
-  out.push(
-    path([P(pose.heel), P(pose.ball), P(pose.toe)], {
-      ...g,
-      ...cap,
-      'stroke-width': opts.width,
-    }),
-  )
+  if (opts.foot) {
+    // 靴底の上に足部が乗る。かかとの高さ h はヒール高で決まり、φ と整合する
+    // （heel→ball の傾き = atan(h / (K_PIVOT·L_foot)) = φ）。
+    // 幾何モデルには反映しない描画上の表現で、足関節も中足部基準線も動かない（§4.4）。
+    const heelRise = Math.sin(pose.heelTiltDeg * DEG) * K_PIVOT * pose.seg.foot
+    const lift = (v: Vec, dy: number): Vec => ({ x: v.x, y: v.y + dy })
 
-  // 足関節から足裏へ下ろす短い線。これがないと足関節が宙に浮いて見える
-  // 足部が回転していても、線分上の比率は回転で保たれるので未回転の比で引ける
-  const underAnkle = lerpVec(pose.heel, pose.ball, pose.ankle.x / (K_PIVOT * pose.seg.foot))
-  out.push(
-    path([P(pose.ankle), P(underAnkle)], {
-      ...g,
-      ...cap,
-      'stroke-width': opts.width * 0.72,
-    }),
-  )
+    const heel = lift(pose.heel, SOLE_T + heelRise)
+    const ball = lift(pose.ball, SOLE_T)
+    const toe = lift(pose.toe, SOLE_T)
+
+    // 靴底。床に接する面 → つま先 → 前足部 → かかと → 始点へ戻る
+    out.push(
+      path([P(pose.heel), P(pose.toe), P(toe), P(ball), P(heel), P(pose.heel)], {
+        fill: color,
+        'fill-opacity': opts.opacity * SOLE_FILL,
+        ...g,
+        'stroke-width': opts.width * 0.55,
+        'stroke-linejoin': 'round',
+      }),
+    )
+
+    // 足部（かかと → 中足骨頭 → つま先）
+    out.push(path([P(heel), P(ball), P(toe)], { ...g, ...cap, 'stroke-width': opts.width }))
+
+    // 足関節から足裏へ下ろす短い線。これがないと足関節が宙に浮いて見える。
+    // 足部が回転していても線分上の比率は保たれるので、未回転の比で引ける
+    const underAnkle = lerpVec(heel, ball, pose.ankle.x / (K_PIVOT * pose.seg.foot))
+    out.push(
+      path([P(pose.ankle), P(underAnkle)], { ...g, ...cap, 'stroke-width': opts.width * 0.72 }),
+    )
+  }
 
   // 脚と上体
   out.push(
@@ -161,12 +201,25 @@ function drawFigure(
     }),
   )
 
-  // 頭
+  // 首と頭
   const t = pose.torsoDeg * DEG
-  const head = P({
-    x: pose.shoulder.x + Math.sin(t) * HEAD_OFFSET,
-    y: pose.shoulder.y + Math.cos(t) * HEAD_OFFSET,
-  })
+  const up: Vec = { x: Math.sin(t), y: Math.cos(t) }
+  const headModel: Vec = {
+    x: pose.shoulder.x + up.x * HEAD_OFFSET,
+    y: pose.shoulder.y + up.y * HEAD_OFFSET,
+  }
+  const head = P(headModel)
+
+  out.push(
+    path(
+      [
+        P(pose.shoulder),
+        P({ x: headModel.x - up.x * HEAD_R, y: headModel.y - up.y * HEAD_R }),
+      ],
+      { ...g, ...cap, 'stroke-width': opts.width * 0.8 },
+    ),
+  )
+
   out.push(
     el('circle', {
       cx: head.x,
@@ -178,13 +231,32 @@ function drawFigure(
     }),
   )
 
+  // 鼻。どちらを向いているかを示す
+  const nt = t * NOSE_FOLLOW
+  const fwd: Vec = { x: Math.cos(nt), y: -Math.sin(nt) }
+  const side: Vec = { x: Math.sin(nt), y: Math.cos(nt) }
+  const at = (f: number, s: number) =>
+    P({ x: headModel.x + fwd.x * f + side.x * s, y: headModel.y + fwd.y * f + side.y * s })
+  out.push(
+    path([at(HEAD_R * 0.92, NOSE_HALF), at(HEAD_R + NOSE_LEN, 0), at(HEAD_R * 0.92, -NOSE_HALF)], {
+      fill: color,
+      'fill-opacity': opts.opacity,
+      stroke: 'none',
+    }),
+  )
+
   if (opts.joints) {
     // 関節の丸ポチ（§7：解剖を知らない人に股関節の位置を示すため必須）
     for (const j of [pose.ankle, pose.knee, pose.hip, pose.shoulder]) {
       out.push(dot(P(j), DOT_R * cam.s, color))
     }
-    // 中足部の印。足裏の線と同色だと埋もれるので白抜きにする
-    const mid = P(pose.mid)
+    // 中足部の印。足裏の線と同色だと埋もれるので白抜きにする。
+    // 靴底を描いているときは足裏の線の上に乗せる
+    const midSole = opts.foot
+      ? SOLE_T +
+        Math.sin(pose.heelTiltDeg * DEG) * (K_PIVOT * pose.seg.foot - pose.mid.x)
+      : 0
+    const mid = P({ x: pose.mid.x, y: pose.mid.y + midSole })
     out.push(
       el('circle', {
         cx: mid.x,
@@ -295,10 +367,12 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
 
     // 立位ゴースト
     if (body.ghost) {
+      // 足は動かないのでゴースト側では描かない（実線の足部と完全に重なるだけ）
       drawFigure(out, cam, body.ghost, COLORS.ghost, {
         width: 3,
         opacity: faded ? 0.4 : 0.85,
         joints: false,
+        foot: false,
       })
     }
 
@@ -336,7 +410,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
         ),
       )
       out.push(
-        text({ x: right + 6, y: y + 4 }, 'IPF', {
+        text({ x: right + 7, y: y + 4 }, '股関節＜膝', {
           fill: body.color,
           'font-size': 12,
           opacity: 0.85,
@@ -348,6 +422,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
       width: faded ? 3.5 : 5,
       opacity,
       joints: true,
+      foot: true,
     })
 
     if (!faded) drawWarnings(out, cam, body.pose)
