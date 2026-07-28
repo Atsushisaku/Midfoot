@@ -43,11 +43,17 @@ export type Layout = keyof typeof CAMERAS
 const HEAD_R = 0.078
 const HEAD_OFFSET = 0.15
 const BAR_R = 0.032
-const DOT_R = 0.012
 
-/** 鼻。どちらを向いているかを示すための三角形（前方 +x を向く） */
-const NOSE_LEN = 0.042
-const NOSE_HALF = 0.032
+/**
+ * 関節の白抜き円（デッサン人形式、Rev.7）。
+ * セグメントは円を貫通せず、**円の縁から縁まで**を管として引く。
+ */
+const JOINT_R = 0.021
+const ANKLE_R = 0.016
+
+/** 鼻。どちらを向いているかを示す小さな直角三角形（前方 +x を向く） */
+const NOSE_LEN = 0.036
+const NOSE_HALF = 0.026
 /**
  * 鼻の向きを上体の傾きにどれだけ追従させるか。
  * 1.0（剛体）だと深いボトムで鼻が真下を向いて壊れて見える。
@@ -55,13 +61,18 @@ const NOSE_HALF = 0.032
  */
 const NOSE_FOLLOW = 0.6
 
-/** ヒールのくさびの塗りの濃さ。高さ h は実寸（20mm / 25mm）なので触らない */
-const SOLE_FILL = 0.3
+/**
+ * 靴のシルエット（Rev.7：足の線を描くのをやめ、靴の形そのものにした）。
+ * かかと上端の高さは SHOE_COLLAR + h。h はヒール実寸（§4.4）なので誇張しない。
+ * くさび（h の直角三角形）は靴の中に色付きで描き、その斜辺の傾きは φ に一致する。
+ */
+const SHOE_COLLAR = 0.03
+const SHOE_TOE_T = 0.015
+const SHOE_WEDGE_FILL = 0.35
 
-/** 四肢を管状に描くときの、輪郭線の太さ（片側・px） */
-const LIMB_WALL = 2.6
-/** 管の中身の色 */
-const LIMB_FILL = '#eef1f3'
+/** 管の輪郭線の太さ（片側・px）と中身の色 */
+const LIMB_WALL = 2.4
+const LIMB_FILL = '#fff'
 
 // --- 色（§6：良し悪しを示唆しない中間色） -----------------------------------
 
@@ -91,10 +102,19 @@ function makeCam(layout: Layout, index: number, pose: Pose): Cam {
 
 const toScreen = (cam: Cam, v: Vec): Vec => ({ x: cam.ox + v.x * cam.s, y: cam.oy - v.y * cam.s })
 
-const lerpVec = (a: Vec, b: Vec, k: number): Vec => ({
-  x: a.x + (b.x - a.x) * k,
-  y: a.y + (b.y - a.y) * k,
-})
+/** 線分 a→b の両端を、それぞれ ra / rb だけ内側に詰める（関節円の縁で止めるため） */
+function trimSeg(a: Vec, b: Vec, ra: number, rb: number): [Vec, Vec] {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const len = Math.hypot(dx, dy)
+  if (len <= ra + rb + 1e-6) return [a, b]
+  const ux = dx / len
+  const uy = dy / len
+  return [
+    { x: a.x + ux * ra, y: a.y + uy * ra },
+    { x: b.x - ux * rb, y: b.y - uy * rb },
+  ]
+}
 
 function el(tag: string, attrs: Record<string, string | number>): SVGElement {
   const node = document.createElementNS(NS, tag)
@@ -158,43 +178,6 @@ function drawFigure(
   const P = (v: Vec) => toScreen(cam, v)
   const g = { stroke: color, opacity: opts.opacity }
   const cap = { 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
-  const core = opts.width - 2 * LIMB_WALL
-
-  // 四肢は「輪郭 → 中身」の2度描きで管状にする。
-  // 全部の輪郭を先に出してから中身を重ねないと、隣り合う部位の境目に輪郭線が残る。
-  // 部位ごとに太さを変える。足部を脚と同じ太さで描くと肉厚に見えすぎる
-  const outlines: { pts: Vec[]; w: number }[] = []
-  const shoe: SVGElement[] = []
-
-  if (opts.foot) {
-    // ヒールはくさび（直角三角形）。フラットでは何も描かない。
-    // かかとの高さ h はヒール高そのもので、かかと→中足骨頭の傾きは φ に一致する。
-    // 幾何モデルには反映しない描画上の表現で、足関節も中足部基準線も動かない（§4.4）。
-    const heelRise = Math.sin(pose.heelTiltDeg * DEG) * K_PIVOT * pose.seg.foot
-    const heel: Vec = { x: pose.heel.x, y: pose.heel.y + heelRise }
-
-    if (heelRise > 1e-9) {
-      shoe.push(
-        path([P(pose.heel), P(pose.ball), P(heel), P(pose.heel)], {
-          fill: color,
-          'fill-opacity': opts.opacity * SOLE_FILL,
-          ...g,
-          'stroke-width': Math.max(1.5, opts.width * 0.35),
-          'stroke-linejoin': 'round',
-        }),
-      )
-    }
-
-    outlines.push({ pts: [heel, pose.ball, pose.toe], w: opts.width * 0.7 })
-    // 足関節から足裏へ。これがないと足関節が宙に浮いて見える。
-    // 足部が回転していても線分上の比率は保たれるので、未回転の比で引ける
-    outlines.push({
-      pts: [pose.ankle, lerpVec(heel, pose.ball, pose.ankle.x / (K_PIVOT * pose.seg.foot))],
-      w: opts.width * 0.6,
-    })
-  }
-
-  outlines.push({ pts: [pose.ankle, pose.knee, pose.hip, pose.shoulder], w: opts.width })
 
   const t = pose.torsoDeg * DEG
   const up: Vec = { x: Math.sin(t), y: Math.cos(t) }
@@ -204,86 +187,185 @@ function drawFigure(
   }
   const head = P(headModel)
 
-  // 首
-  outlines.push({
-    pts: [pose.shoulder, { x: headModel.x - up.x * HEAD_R, y: headModel.y - up.y * HEAD_R }],
-    w: opts.width * 0.78,
-  })
-
-  out.push(...shoe)
-  for (const o of outlines) {
-    out.push(path(o.pts.map(P), { ...g, ...cap, 'stroke-width': o.w }))
+  const drawNose = () => {
+    // 直角三角形。下辺が前方に水平、斜辺が鼻筋（直角は顔側の下）
+    const nt = t * NOSE_FOLLOW
+    const fwd: Vec = { x: Math.cos(nt), y: -Math.sin(nt) }
+    const side: Vec = { x: Math.sin(nt), y: Math.cos(nt) }
+    const at = (f: number, s: number) =>
+      P({ x: headModel.x + fwd.x * f + side.x * s, y: headModel.y + fwd.y * f + side.y * s })
+    const root = HEAD_R * 0.9
+    out.push(
+      path([at(root, NOSE_HALF), at(root, 0), at(root + NOSE_LEN, 0), at(root, NOSE_HALF)], {
+        fill: color,
+        'fill-opacity': opts.opacity,
+        stroke: color,
+        'stroke-opacity': opts.opacity,
+        'stroke-width': 1.5,
+        'stroke-linejoin': 'round',
+      }),
+    )
   }
-  if (opts.tube) {
-    for (const o of outlines) {
+
+  const drawBar = () => {
+    // §7：背中側にあることが分かる位置に円で
+    const bar = P(pose.bar)
+    out.push(
+      el('circle', {
+        cx: bar.x,
+        cy: bar.y,
+        r: BAR_R * cam.s,
+        fill: '#fff',
+        stroke: color,
+        opacity: opts.opacity,
+        'stroke-width': opts.tube ? LIMB_WALL * 2 : opts.width * 1.2,
+      }),
+    )
+  }
+
+  if (!opts.tube) {
+    // 立位ゴースト：簡素な線画のまま
+    out.push(
+      path([P(pose.ankle), P(pose.knee), P(pose.hip), P(pose.shoulder)], {
+        ...g,
+        ...cap,
+        'stroke-width': opts.width,
+      }),
+    )
+    out.push(
+      path(
+        [P(pose.shoulder), P({ x: headModel.x - up.x * HEAD_R, y: headModel.y - up.y * HEAD_R })],
+        { ...g, ...cap, 'stroke-width': opts.width * 0.8 },
+      ),
+    )
+    out.push(
+      el('circle', {
+        cx: head.x,
+        cy: head.y,
+        r: HEAD_R * cam.s,
+        fill: 'none',
+        ...g,
+        'stroke-width': opts.width,
+      }),
+    )
+    drawNose()
+    drawBar()
+    return
+  }
+
+  // --- デッサン人形式（Rev.7）：関節は独立した白抜き円、セグメントは縁から縁まで ---
+
+  // 靴（足の線は描かず、靴のシルエットそのもの）
+  if (opts.foot) {
+    // 足部の座標系。つま先浮きで回転していても、heel→toe 方向を基底にすれば同じ式で描ける
+    const fdx = pose.toe.x - pose.heel.x
+    const fdy = pose.toe.y - pose.heel.y
+    const flen = Math.hypot(fdx, fdy)
+    const u: Vec = { x: fdx / flen, y: fdy / flen }
+    const v: Vec = { x: -u.y, y: u.x }
+    const L = pose.seg.foot
+    const pt = (a: number, b: number): Vec => ({
+      x: pose.heel.x + u.x * a + v.x * b,
+      y: pose.heel.y + u.y * a + v.y * b,
+    })
+
+    // ヒール実寸。sin φ = h / (K_PIVOT·L_foot) なのでこれがちょうど h になる
+    const h = Math.sin(pose.heelTiltDeg * DEG) * K_PIVOT * L
+    const collar = SHOE_COLLAR + h
+
+    // シルエット：かかと(床) → つま先(床) → つま先上面 → 甲（足関節の下） → かかと上端
+    const silhouette = [
+      pt(0, 0),
+      pt(L, 0),
+      pt(L * 0.97, SHOE_TOE_T),
+      pt(L * 0.3, collar * 0.92),
+      pt(0, collar),
+      pt(0, 0),
+    ]
+    out.push(
+      path(silhouette.map(P), {
+        fill: LIMB_FILL,
+        'fill-opacity': opts.opacity,
+        ...g,
+        'stroke-width': LIMB_WALL,
+        'stroke-linejoin': 'round',
+      }),
+    )
+
+    // ヒールのくさび（h の直角三角形）。フラット（h=0）では消える。
+    // 斜辺の傾きは atan(h / (K_PIVOT·L)) = φ で、モデルと厳密に一致する
+    if (h > 1e-9) {
       out.push(
-        path(o.pts.map(P), {
-          stroke: LIMB_FILL,
-          opacity: opts.opacity,
-          ...cap,
-          'stroke-width': Math.max(1, o.w - 2 * LIMB_WALL),
+        path([pt(0, 0), pt(K_PIVOT * L, 0), pt(0, h), pt(0, 0)].map(P), {
+          fill: color,
+          'fill-opacity': opts.opacity * SHOE_WEDGE_FILL,
+          stroke: 'none',
+        }),
+      )
+    }
+
+    // 中足部の印（小さく、靴底の上）
+    out.push(dot(P(pose.mid), 3.5, color))
+  }
+
+  // セグメント：関節円の縁から縁まで。輪郭 → 白い中身の2度描きで管にする
+  const segs: [Vec, Vec, number, number][] = [
+    [pose.ankle, pose.knee, ANKLE_R, JOINT_R],
+    [pose.knee, pose.hip, JOINT_R, JOINT_R],
+    // 上体は肩で止めず頭まで1本。肩の位置はバーの円が示す
+    [pose.hip, headModel, JOINT_R, HEAD_R],
+  ]
+  const trimmed = segs.map(([a, b, ra, rb]) => trimSeg(a, b, ra, rb))
+  for (const [a, b] of trimmed) {
+    out.push(path([P(a), P(b)], { ...g, ...cap, 'stroke-width': opts.width }))
+  }
+  for (const [a, b] of trimmed) {
+    out.push(
+      path([P(a), P(b)], {
+        stroke: LIMB_FILL,
+        opacity: opts.opacity,
+        ...cap,
+        'stroke-width': Math.max(1, opts.width - 2 * LIMB_WALL),
+      }),
+    )
+  }
+
+  // 関節の白抜き円（§7：解剖を知らない人に股関節の位置を示すため必須）
+  if (opts.joints) {
+    for (const [c, r] of [
+      [pose.ankle, ANKLE_R],
+      [pose.knee, JOINT_R],
+      [pose.hip, JOINT_R],
+    ] as const) {
+      const p = P(c)
+      out.push(
+        el('circle', {
+          cx: p.x,
+          cy: p.y,
+          r: r * cam.s,
+          fill: LIMB_FILL,
+          'fill-opacity': opts.opacity,
+          ...g,
+          'stroke-width': LIMB_WALL,
         }),
       )
     }
   }
 
-  // 頭
+  // 頭と鼻
   out.push(
     el('circle', {
       cx: head.x,
       cy: head.y,
       r: HEAD_R * cam.s,
-      fill: opts.tube ? LIMB_FILL : 'none',
+      fill: LIMB_FILL,
       'fill-opacity': opts.opacity,
       ...g,
-      'stroke-width': opts.tube ? LIMB_WALL * 2 : opts.width,
+      'stroke-width': LIMB_WALL,
     }),
   )
-
-  // 鼻。どちらを向いているかを示す。直角三角形で、下辺が前方に水平、
-  // 斜辺が鼻筋になるように置く（直角は顔側の下）
-  const nt = t * NOSE_FOLLOW
-  const fwd: Vec = { x: Math.cos(nt), y: -Math.sin(nt) }
-  const side: Vec = { x: Math.sin(nt), y: Math.cos(nt) }
-  const at = (f: number, s: number) =>
-    P({ x: headModel.x + fwd.x * f + side.x * s, y: headModel.y + fwd.y * f + side.y * s })
-  const root = HEAD_R * 0.86
-  out.push(
-    path([at(root, NOSE_HALF), at(root, 0), at(root + NOSE_LEN, 0), at(root, NOSE_HALF)], {
-      fill: color,
-      'fill-opacity': opts.opacity,
-      stroke: color,
-      'stroke-opacity': opts.opacity,
-      'stroke-width': 1.5,
-      'stroke-linejoin': 'round',
-    }),
-  )
-
-  if (opts.joints) {
-    // 関節の丸ポチ（§7：解剖を知らない人に股関節の位置を示すため必須）。
-    // 管の内側に収まる大きさにする
-    const r = opts.tube ? Math.min(DOT_R * cam.s, core / 2 - 0.5) : DOT_R * cam.s
-    for (const j of [pose.ankle, pose.knee, pose.hip, pose.shoulder]) {
-      out.push(dot(P(j), r, color))
-    }
-    out.push(dot(P(pose.mid), r, color))
-  }
-
-  // バー（§7：背中側にあることが分かる位置に円で）。
-  // ハイバーでは肩の丸ポチとほぼ重なるので、白抜き＋太い輪郭で別物と分かるようにする
-  const bar = P(pose.bar)
-  out.push(
-    el('circle', {
-      cx: bar.x,
-      cy: bar.y,
-      r: BAR_R * cam.s,
-      fill: '#fff',
-      stroke: color,
-      opacity: opts.opacity,
-      // 管の壁と同じ太さ。opts.width に連動させると輪郭が円を塗り潰す
-      'stroke-width': opts.tube ? LIMB_WALL * 2 : opts.width * 1.2,
-    }),
-  )
+  drawNose()
+  drawBar()
 }
 
 function drawWarnings(out: SVGElement[], cam: Cam, pose: Pose): void {
@@ -407,7 +489,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
     }
 
     drawFigure(out, cam, body.pose, body.color, {
-      width: faded ? 11 : 14,
+      width: faded ? 8.5 : 10,
       opacity,
       joints: true,
       foot: true,
