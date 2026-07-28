@@ -48,8 +48,8 @@ const BAR_R = 0.032
  * 関節の白抜き円（デッサン人形式、Rev.7）。
  * セグメントは円を貫通せず、**円の縁から縁まで**を管として引く。
  */
-const JOINT_R = 0.021
-const ANKLE_R = 0.016
+const JOINT_R = 0.025
+const ANKLE_R = 0.019
 
 /**
  * 鼻（Rev.8 で作り直し）。
@@ -75,7 +75,7 @@ const SHOE_TOE_T = 0.015
 const SHOE_WEDGE_FILL = 0.35
 
 /** 管の輪郭線の太さ（片側・px）と中身の色 */
-const LIMB_WALL = 2.4
+const LIMB_WALL = 2.6
 const LIMB_FILL = '#fff'
 
 // --- 色（§6：良し悪しを示唆しない中間色） -----------------------------------
@@ -505,7 +505,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
     }
 
     drawFigure(out, cam, body.pose, body.color, {
-      width: faded ? 8.5 : 10,
+      width: faded ? 10.5 : 12.5,
       opacity,
       joints: true,
       foot: true,
