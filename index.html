@@ -21,10 +21,13 @@
       </section>
 
       <section class="controls">
+        <!--
+          深さは両ペイン共有（§8.5）。図のすぐ下に置く：モバイルでは設定ペインが縦に
+          伸びるため、下端に置くと画面外へ出て「動かしながら図を見る」ができなくなる
+        -->
+        <div class="row sliders depth-row" id="depthRow"></div>
         <!-- 設定ペイン。単体=1ペイン、比較=2ペイン。中身は app.ts が生成する（§8.5） -->
         <div class="panes" id="panes"></div>
-        <!-- 深さは動作の変数なので両ペイン共有（§8.5） -->
-        <div class="row sliders depth-row" id="depthRow"></div>
       </section>
 
       <!-- 注記の中身は i18n.ts の notesList から app.ts が入れる（§9） -->

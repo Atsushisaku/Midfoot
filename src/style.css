@@ -317,11 +317,11 @@ body {
   --accent-soft: #ffefe8;
 }
 
-/* 深さは全ペイン共有なので、区切ってから1本だけ中央に置く。
+/* 深さは全ペイン共有なので、図の直下に1本だけ中央に置く（Rev.11）。
    画面幅いっぱいだとドラッグ距離が長すぎるので幅を絞る */
 .depth-row {
-  border-top: 1px dashed var(--border);
-  padding-top: 8px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 8px;
   justify-content: center;
   align-items: center;
   gap: 14px;
