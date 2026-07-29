@@ -399,11 +399,12 @@ function buildPane(i: 0 | 1): PaneUI {
   const labeled = el('div', 'labeled-seg')
   labeled.append(el('span', 'seg-label', t().ankle), ankleSeg)
 
-  const simpleRow = el('div', 'row row-buttons grow')
+  // 見出し（カテゴリ名＋簡易／詳細）と設定そのものは段を分ける（Rev.11）
+  const simpleRow = el('div', 'row row-buttons')
   simpleRow.append(presetSeg, labeled)
 
   const head = el('div', 'row row-buttons')
-  head.append(el('span', 'section-label', t().bodySection), modeSeg, simpleRow)
+  head.append(el('span', 'section-label', t().bodySection), modeSeg)
 
   const slidersRow = el('div', 'row sliders')
   slidersRow.hidden = true
@@ -422,7 +423,7 @@ function buildPane(i: 0 | 1): PaneUI {
   }
 
   const bodySection = el('div', 'body-section')
-  bodySection.append(head, slidersRow)
+  bodySection.append(head, simpleRow, slidersRow)
 
   // --- 道具：担ぎ位置・シューズ ---
   const barSeg = buildSeg('', t().aria.barPosition, [
@@ -452,10 +453,17 @@ function buildPane(i: 0 | 1): PaneUI {
     scheduleUrl()
   })
 
-  const tools = el('div', 'row row-buttons')
-  tools.append(barSeg, shoeSeg)
+  // 身体側と同じ「見出しの段 → 設定の段」の形にそろえる（Rev.11）
+  const toolHead = el('div', 'row row-buttons')
+  toolHead.append(el('span', 'section-label', t().toolSection))
 
-  root.append(bodySection, tools)
+  const toolRow = el('div', 'row row-buttons')
+  toolRow.append(barSeg, shoeSeg)
+
+  const toolSection = el('div', 'tool-section')
+  toolSection.append(toolHead, toolRow)
+
+  root.append(bodySection, toolSection)
   panesHost.append(root)
 
   return { root, modeSeg, presetSeg, ankleSeg, barSeg, shoeSeg, simpleRow, slidersRow, inputs }

@@ -15,6 +15,7 @@ export interface Strings {
   readonly close: string
   /** 設定ペイン */
   readonly bodySection: string
+  readonly toolSection: string
   readonly simple: string
   readonly detail: string
   readonly ankle: string
@@ -58,7 +59,8 @@ const ja: Strings = {
   compare: '比較',
   notes: '注記',
   close: '閉じる',
-  bodySection: '身体の特徴',
+  bodySection: '身体的特徴',
+  toolSection: '担ぎ方・シューズ',
   simple: '簡易',
   detail: '詳細',
   ankle: '足首',
@@ -109,6 +111,7 @@ const en: Strings = {
   notes: 'Notes',
   close: 'Close',
   bodySection: 'Body',
+  toolSection: 'Bar & shoes',
   simple: 'Simple',
   detail: 'Detailed',
   ankle: 'Ankle',
