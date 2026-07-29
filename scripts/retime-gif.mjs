@@ -39,7 +39,10 @@ while (p < buf.length) {
     // extension
     const label = buf[p + 1]
     p += 2
-    if (label === 0xf9) gceOffsets.push(p + 1) // delay は sub-block の 2 バイト目から
+    // GCE のサブブロックは [size=4][packed][delay lo][delay hi][transparent idx]。
+    // p はいま size バイトを指しているので、delay は p+2。
+    // p+1（packed）に書くと廃棄方法まで壊れる
+    if (label === 0xf9) gceOffsets.push(p + 2)
     skipSubBlocks()
   } else if (b === 0x2c) {
     // image descriptor

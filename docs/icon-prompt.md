@@ -113,11 +113,20 @@ SNS 用の短いデモは `docs/midfoot-demo.mp4`（横）と `docs/midfoot-demo
    録画ツールはクリック等の操作しかフレームに残さないので、JS で値を変えても
    フレームが増えない
 3. 操作は**1回のバッチにまとめる**。バッチをまたぐとその待ち時間がフレーム間隔になる
-4. 録画ツールはフレーム間隔を指定できず、**操作の実時間がそのまま間隔になる**
+4. **録画は 50 フレームが上限。** これが滑らかさの制約になるので、
+   場面ごとに録画を分けて撮り、ffmpeg の `concat` で繋ぐ。
+   1回の録画で 1 クリック ≈ 2 フレームなので、**動きの区間は 24 ステップ**が上限。
+   深さ 0→100 を 24 分割すれば 47 フレーム（25fps で 1.9 秒）の滑らかな降下になる
+5. 録画ツールはフレーム間隔を指定できず、**操作の実時間がそのまま間隔になる**
    （そのままだと 47 フレームで約3分の紙芝居）。`scripts/retime-gif.mjs` で
-   GIF の delay を一定値に書き換える：`node scripts/retime-gif.mjs in.gif out.gif 10 200`
-5. MP4 化（ffmpeg）：
+   GIF の delay を一定値に書き換える：`node scripts/retime-gif.mjs in.gif out.gif 4 4`（40ms＝25fps）
+6. MP4 化（ffmpeg）：
    - 横：`-c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart -vf fps=25`
    - 縦：図の部分を切り出して拡大し、操作パネルを下に積む。
      `crop=760:430:420:0` と `crop=1568:316:0:430` を `vstack` して 1080×1920 に pad。
      全体をそのまま縮小すると図が小さすぎて読めない
+
+> **`retime-gif.mjs` の実装注意**：GCE のサブブロックは
+> `[size=4][packed][delay lo][delay hi][transparent idx]` なので、
+> delay の書き込み先は size バイトの **+2**。+1（packed）に書くと廃棄方法まで
+> 壊れて、再生時間も意図しない値になる（一度この誤りで 5.4 秒が 18.5 秒になった）。
