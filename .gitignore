@@ -5,3 +5,6 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# 録画の中間生成物（大きい。MP4 だけコミットする）
+docs/*.gif
