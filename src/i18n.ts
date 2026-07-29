@@ -95,13 +95,13 @@ const ja: Strings = {
     lang: '言語',
   },
   notesList: [
-    'バーではなく、身体＋バーの合成重心が中足部の上にあるのが正確な条件。高重量ではバー位置で近似できる。',
-    '上体は1本の棒として扱っている（実際は腰椎・胸椎で角度が分散する）。',
-    'スタンス幅を広げたり股関節を外旋させると、矢状面では大腿骨が短くなったのと同じ効果が出る。この図では表現していないが、実際の解決策としては有効。',
-    '靴のヒールは最適な傾き量を変えるのではなく、その脛角度に<strong>届くかどうか</strong>を変える。',
-    'ローバーは前傾を<strong>減らすのではなく増やす</strong>。買っているのは「脛を立てたままバランスが取れること」で、対価が前傾と股関節・背部の負担。大腿が長い人ほどこの増分は大きい。',
-    '身長そのものは上体角度に影響しない。効くのは<strong>セグメントの比率だけ</strong>で、比率が同じなら大柄でも小柄でも答えは変わらない。',
-    '傾きの大きさは体格による最適解であり、フォームの優劣ではない。',
+    '厳密な条件は「バーが中足部の真上」ではなく、<strong>身体とバーを合わせた重心が中足部の真上</strong>にあること。高重量ではバーの位置でほぼ近似できる。',
+    'この図では上体を1本の棒として扱っている。実際の前傾は腰椎と胸椎に分散する。',
+    'スタンスを広げたり股関節を外旋させたりすると、横から見た面では<strong>大腿が短くなったのと同じ効果</strong>になる。この図では表現していないが、前傾を抑える手段としては有効。',
+    '靴のヒールが変えるのは、必要な前傾の量そのものではなく<strong>すねをどこまで前に倒せるか</strong>。足首が硬い人ほど効果が大きい。',
+    'ローバーは前傾を<strong>減らすのではなく増やす</strong>。得られるのは「すねを立てたままバランスが取れること」で、引き換えに前傾が深くなり、股関節と背部の負担が増える。大腿が長い人ほど増え方は大きい。',
+    '身長そのものは上体角度に影響しない。効くのは<strong>各部位の長さの比だけ</strong>で、比が同じなら大柄でも小柄でも同じ角度になる。',
+    '傾きの大きさは<strong>その人の体格にとっての最適解</strong>であって、フォームの良し悪しではない。',
   ],
 }
 
@@ -147,13 +147,13 @@ const en: Strings = {
     lang: 'Language',
   },
   notesList: [
-    "Strictly, it is the combined center of mass of body + bar that must stay over the midfoot, not the bar itself. Under heavy loads the bar's position is a good approximation.",
-    'The torso is modeled as a single rigid segment (in reality the angle is distributed across the lumbar and thoracic spine).',
-    "Widening the stance or externally rotating the hips has the same effect as a shorter femur in the sagittal plane. This model doesn't show it, but it is an effective real-world solution.",
-    'A raised heel does not change the optimal amount of lean — it changes whether you can <strong>reach</strong> that shin angle.',
-    'Low bar <strong>increases</strong> forward lean rather than reducing it. What it buys is the ability to stay balanced with more vertical shins; the price is more lean and more load on the hips and back. The longer the femur, the larger this increase.',
-    "Height itself does not affect torso angle. Only the <strong>ratios between segments</strong> matter — with the same ratios, a tall and a short lifter get the same answer.",
-    'How much you lean is the optimal solution for your proportions, not a measure of good or bad form.',
+    'The exact condition is not that the bar sits over the midfoot, but that the <strong>combined center of mass of body and bar</strong> does. Under heavy loads the bar position is a close enough approximation.',
+    'This model treats the torso as a single rigid segment. Real forward lean is distributed across the lumbar and thoracic spine.',
+    'Widening the stance or rotating the hips outward has <strong>the same effect as a shorter femur</strong> when seen from the side. The model does not show this, but it is an effective way to reduce lean in practice.',
+    'What a raised heel changes is <strong>how far the shin can travel forward</strong>, not the amount of lean you need. The stiffer the ankle, the more it helps.',
+    'Low bar <strong>increases</strong> forward lean rather than reducing it. What you gain is the ability to stay balanced with more vertical shins; in exchange the lean gets deeper and the hips and back carry more. The longer the femur, the larger the increase.',
+    'Height itself does not affect torso angle. Only the <strong>ratios between segment lengths</strong> matter — with the same ratios, a tall and a short lifter end up at the same angle.',
+    'How much you lean is <strong>the optimal answer for your proportions</strong>, not a measure of good or bad form.',
   ],
 }
 

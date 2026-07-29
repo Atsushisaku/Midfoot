@@ -151,12 +151,27 @@ body {
   color: rgb(255 255 255 / 0.85);
 }
 
-/* 図の四隅に浮かぶボタン（比較=左上、注記=右上。§6 Rev.10） */
-.cornerbtn {
+/* 図の上に浮かぶボタン（左上＝比較・注記を縦に、右上＝言語。§6 Rev.11） */
+.corner {
   position: absolute;
   top: 14px;
-  left: 16px;
   z-index: 5;
+  display: flex;
+  gap: 10px;
+}
+
+.corner.left {
+  left: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.corner.right {
+  right: 16px;
+  align-items: center;
+}
+
+.cornerbtn {
   appearance: none;
   font: inherit;
   font-size: 15px;
@@ -170,19 +185,8 @@ body {
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.08);
 }
 
-/* 右上は言語トグルと注記を横に並べる */
-.corner.right {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.corner .cornerbtn {
-  position: static;
+/* 注記は補助的な操作なので控えめに */
+.cornerbtn.ghost {
   color: var(--muted);
 }
 

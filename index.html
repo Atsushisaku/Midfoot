@@ -10,13 +10,15 @@
     <div id="app">
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
-        <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
+        <div class="corner left">
+          <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
+          <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
+        </div>
         <div class="corner right">
           <div class="seg lang" id="lang" role="group">
             <button data-v="ja">JA</button>
             <button data-v="en">EN</button>
           </div>
-          <button class="cornerbtn" id="notesBtn" aria-expanded="false"></button>
         </div>
       </section>
 
