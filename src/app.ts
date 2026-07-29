@@ -452,6 +452,64 @@ function buildPane(i: 0 | 1): PaneUI {
 
 let panes: [PaneUI, PaneUI]
 let depthInput: HTMLInputElement
+let playBtn: HTMLButtonElement
+
+// ---------------------------------------------------------------------------
+// 自動再生（§8.2）：立位↔ボトムを、両端で一瞬止めながら往復し続ける
+// ---------------------------------------------------------------------------
+
+/** 片道の所要時間（p の全域ぶん。途中から始まる区間は距離に比例して短くなる） */
+const PLAY_MOVE = 1200
+/** 立位・ボトムでの静止時間 */
+const PLAY_HOLD = 300
+
+type PlaySeg = 'down' | 'holdBottom' | 'up' | 'holdTop'
+
+interface Play {
+  seg: PlaySeg
+  from: number
+  start: number
+  dur: number
+}
+
+let play: Play | null = null
+
+const PLAY_NEXT: Record<PlaySeg, PlaySeg> = {
+  down: 'holdBottom',
+  holdBottom: 'up',
+  up: 'holdTop',
+  holdTop: 'down',
+}
+
+const playTarget = (seg: PlaySeg): number => (seg === 'down' || seg === 'holdBottom' ? 1 : 0)
+
+function makeSeg(seg: PlaySeg, from: number, start: number): Play {
+  const dur =
+    seg === 'down' ? PLAY_MOVE * (1 - from) : seg === 'up' ? PLAY_MOVE * from : PLAY_HOLD
+  return { seg, from, start, dur }
+}
+
+/** 再生中は毎フレーム p を進める。区間の継ぎ目は start を積み上げてリズムを保つ */
+function stepPlay(now: number): void {
+  if (!play) return
+  while (now - play.start >= play.dur) {
+    play = makeSeg(PLAY_NEXT[play.seg], playTarget(play.seg), play.start + play.dur)
+  }
+  const to = playTarget(play.seg)
+  const k = play.dur > 0 ? Math.min(1, (now - play.start) / play.dur) : 1
+  state.p = play.from + (to - play.from) * easeInOutQuad(k)
+  depthInput.value = String(state.p)
+}
+
+function setPlaying(on: boolean): void {
+  // 現在の深さから連続的に動き出す（立位寄りなら下降から、ボトム寄りなら上昇から）
+  play = on ? makeSeg(state.p < 0.5 ? 'down' : 'up', state.p, performance.now()) : null
+  playBtn.textContent = on ? '■ 停止' : '▶ 再生'
+  playBtn.dataset['on'] = String(on)
+  playBtn.setAttribute('aria-pressed', String(on))
+  if (!on) scheduleUrl()
+  requestFrame()
+}
 
 function press(seg: HTMLElement, value: string | null): void {
   for (const b of seg.querySelectorAll('button')) {
@@ -506,6 +564,7 @@ function currentBar(t: PaneTweens, now: number): BarParams {
 
 function draw(now: number): void {
   frameHandle = 0
+  stepPlay(now)
 
   const visible: readonly (0 | 1)[] = state.comparing ? [0, 1] : [0]
   const bodies: SceneBody[] = []
@@ -550,7 +609,7 @@ function draw(now: number): void {
   updateReadout(bodies)
 
   const animating = tweens.some((t) => Object.values(t).some((tw: Tween) => tw.animating))
-  if (animating) requestFrame()
+  if (animating || play) requestFrame()
 }
 
 function updateReadout(bodies: readonly SceneBody[]): void {
@@ -587,7 +646,15 @@ function init(): void {
   readUrl()
   panes = [buildPane(0), buildPane(1)]
 
-  depthInput = buildSlider($('#depthRow'), '深さ', RANGES.depth, state.p, (v) => {
+  const depthRow = $<HTMLDivElement>('#depthRow')
+  playBtn = el('button', 'playbtn', '▶ 再生')
+  playBtn.setAttribute('aria-pressed', 'false')
+  playBtn.addEventListener('click', () => setPlaying(!play))
+  depthRow.append(playBtn)
+
+  depthInput = buildSlider(depthRow, '深さ', RANGES.depth, state.p, (v) => {
+    // 手でドラッグしたら自動再生は止める
+    if (play) setPlaying(false)
     state.p = v
     requestFrame()
     scheduleUrl()

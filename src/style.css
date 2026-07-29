@@ -314,10 +314,40 @@ body {
   --accent-soft: #ffefe8;
 }
 
-/* 深さは全ペイン共有なので、区切ってから1本だけ置く */
+/* 深さは全ペイン共有なので、区切ってから1本だけ中央に置く。
+   画面幅いっぱいだとドラッグ距離が長すぎるので幅を絞る */
 .depth-row {
   border-top: 1px dashed var(--border);
   padding-top: 8px;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.depth-row .slider {
+  flex: 0 1 400px;
+  min-width: 220px;
+}
+
+.playbtn {
+  appearance: none;
+  font: inherit;
+  font-size: 14px;
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.playbtn[data-on='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 /* --- 身体の特徴（簡易／詳細）------------------------------------------------ */
