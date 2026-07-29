@@ -11,47 +11,15 @@
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="readout" id="readout"></div>
+        <button class="cornerbtn" id="compareBtn" aria-pressed="false">比較</button>
+        <button class="cornerbtn right" id="notesBtn" aria-expanded="false">注記</button>
       </section>
 
       <section class="controls">
-        <!-- 身体の特徴：努力では変えられない・変えにくいもの -->
-        <div class="body-section">
-          <div class="row row-buttons">
-            <span class="section-label">身体の特徴</span>
-            <div class="seg mode" id="bodyMode" role="group" aria-label="設定モード">
-              <button data-v="simple">簡易</button>
-              <button data-v="detail">詳細</button>
-            </div>
-            <div class="row row-buttons grow" id="bodySimple">
-              <div class="seg presets" id="presets" role="group" aria-label="体型プリセット"></div>
-              <div class="labeled-seg">
-                <span class="seg-label">足首</span>
-                <div class="seg presets" id="ankle" role="group" aria-label="足首の硬さ"></div>
-              </div>
-            </div>
-          </div>
-          <div class="row sliders" id="bodySliders" hidden></div>
-        </div>
-
-        <!-- 道具・動作：その場で変えられるもの -->
-        <div class="row row-buttons">
-          <div class="seg" id="bar" role="group" aria-label="担ぎ位置">
-            <button data-v="high">ハイバー</button>
-            <button data-v="low">ローバー</button>
-          </div>
-          <div class="seg shoe" id="shoe" role="group" aria-label="シューズ">
-            <button data-v="flat">フラット</button>
-            <button data-v="running">スニーカー<small>(10mm)</small></button>
-            <button data-v="lifting">リフティング<small>(25mm)</small></button>
-          </div>
-        </div>
-
-        <div class="row sliders" id="mainSliders"></div>
-
-        <div class="row row-buttons">
-          <button class="wide" id="freeze">体格を固定</button>
-          <button class="ghostbtn" id="notesBtn" aria-expanded="false">注記</button>
-        </div>
+        <!-- 設定ペイン。単体=1ペイン、比較=2ペイン。中身は app.ts が生成する（§8.5） -->
+        <div class="panes" id="panes"></div>
+        <!-- 深さは動作の変数なので両ペイン共有（§8.5） -->
+        <div class="row sliders depth-row" id="depthRow"></div>
       </section>
 
       <aside id="notes" hidden>

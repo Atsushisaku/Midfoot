@@ -174,8 +174,12 @@ body {
   color: rgb(255 255 255 / 0.85);
 }
 
-button.wide,
-button.ghostbtn {
+/* 図の四隅に浮かぶボタン（比較=左上、注記=右上。§6 Rev.10） */
+.cornerbtn {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 5;
   appearance: none;
   font: inherit;
   font-size: 15px;
@@ -183,20 +187,22 @@ button.ghostbtn {
   padding: 9px 18px;
   border-radius: 9px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--panel);
   color: var(--fg);
   cursor: pointer;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.08);
 }
 
-button.wide[data-on='true'] {
-  background: var(--bodyB);
-  border-color: var(--bodyB);
-  color: #fff;
-}
-
-button.ghostbtn {
-  margin-left: auto;
+.cornerbtn.right {
+  left: auto;
+  right: 16px;
   color: var(--muted);
+}
+
+.cornerbtn[data-on='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 /* --- スライダー ---------------------------------------------------------- */
@@ -281,9 +287,42 @@ button.ghostbtn {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
 }
 
+/* --- 設定ペイン（単体=1、比較=2。§8.5 Rev.10）----------------------------- */
+
+.panes {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.pane {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pane + .pane {
+  border-left: 1px dashed var(--border);
+  padding-left: 18px;
+}
+
+/* ペインBはアクセント色ごとコーラルに（押されたボタン・スライダーのつまみが体Bの色になる） */
+.pane.pane-b {
+  --accent: var(--bodyB);
+  --accent-soft: #ffefe8;
+}
+
+/* 深さは全ペイン共有なので、区切ってから1本だけ置く */
+.depth-row {
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+
 /* --- 身体の特徴（簡易／詳細）------------------------------------------------ */
 
-/* 最上段に置くので、区切り線は下側に引く */
+/* ペインの最上段に置くので、区切り線は下側に引く */
 .body-section {
   border-bottom: 1px dashed var(--border);
   padding-bottom: 8px;

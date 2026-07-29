@@ -69,45 +69,79 @@ class Tween {
 // 状態
 // ---------------------------------------------------------------------------
 
-interface State {
+/**
+ * 1ペイン分の状態（§8.5 Rev.10）。比較モードでは2ペインが独立して
+ * 体格・担ぎ位置・靴を持つ。共有するのは深さ p だけ。
+ */
+interface PaneState {
   body: Body
   bar: BarPosition
   shoe: Shoe
-  p: number
   presetId: string | null
   /** 身体の特徴の表示モード（§6 Rev.10）。URL には保存しない表示上の状態 */
   bodyMode: 'simple' | 'detail'
-  /** 固定した体格（§8.5）。null なら単体表示 */
-  frozen: Body | null
 }
 
-const state: State = {
+interface State {
+  panes: [PaneState, PaneState]
+  comparing: boolean
+  p: number
+}
+
+const defaultPane = (): PaneState => ({
   body: { ...DEFAULT_PRESET.body },
   bar: 'high',
   shoe: 'flat',
-  p: 1,
   presetId: DEFAULT_PRESET.id,
   bodyMode: 'simple',
-  frozen: null,
+})
+
+const state: State = {
+  panes: [defaultPane(), defaultPane()],
+  comparing: false,
+  p: 1,
 }
 
-const tw = {
-  barMix: new Tween(0),
-  shoeH: new Tween(SHOE_HEEL.flat),
-  mShank: new Tween(state.body.mShank),
-  mFemur: new Tween(state.body.mFemur),
-  mTorso: new Tween(state.body.mTorso),
-  foot: new Tween(state.body.foot),
-  romDeg: new Tween(state.body.romDeg),
+interface PaneTweens {
+  barMix: Tween
+  shoeH: Tween
+  mShank: Tween
+  mFemur: Tween
+  mTorso: Tween
+  foot: Tween
+  romDeg: Tween
 }
 
-/** state.body → tween。dur=0 でスライダー、DUR でプリセット／URL 復元 */
-function pushBody(dur: number, now = performance.now()): void {
-  tw.mShank.set(state.body.mShank, dur, now)
-  tw.mFemur.set(state.body.mFemur, dur, now)
-  tw.mTorso.set(state.body.mTorso, dur, now)
-  tw.foot.set(state.body.foot, dur, now)
-  tw.romDeg.set(state.body.romDeg, dur, now)
+const makeTweens = (s: PaneState): PaneTweens => ({
+  barMix: new Tween(s.bar === 'low' ? 1 : 0),
+  shoeH: new Tween(SHOE_HEEL[s.shoe]),
+  mShank: new Tween(s.body.mShank),
+  mFemur: new Tween(s.body.mFemur),
+  mTorso: new Tween(s.body.mTorso),
+  foot: new Tween(s.body.foot),
+  romDeg: new Tween(s.body.romDeg),
+})
+
+const tweens: [PaneTweens, PaneTweens] = [makeTweens(state.panes[0]), makeTweens(state.panes[1])]
+
+/** panes[i].body → tween。dur=0 でスライダー、DUR でプリセット／URL 復元 */
+function pushBody(i: 0 | 1, dur: number, now = performance.now()): void {
+  const s = state.panes[i]
+  const t = tweens[i]
+  t.mShank.set(s.body.mShank, dur, now)
+  t.mFemur.set(s.body.mFemur, dur, now)
+  t.mTorso.set(s.body.mTorso, dur, now)
+  t.foot.set(s.body.foot, dur, now)
+  t.romDeg.set(s.body.romDeg, dur, now)
+}
+
+/** バー・靴も含めてペイン全体を tween に反映する（URL 復元・比較開始時のコピー用） */
+function pushPane(i: 0 | 1, dur: number, now = performance.now()): void {
+  const s = state.panes[i]
+  const t = tweens[i]
+  t.barMix.set(s.bar === 'low' ? 1 : 0, dur, now)
+  t.shoeH.set(SHOE_HEEL[s.shoe], dur, now)
+  pushBody(i, dur, now)
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +173,11 @@ function decodeBody(s: string): Body | null {
   }
 }
 
+const asBar = (v: string | null): BarPosition | null => (v === 'high' || v === 'low' ? v : null)
+
+const asShoe = (v: string | null): Shoe | null =>
+  v === 'flat' || v === 'running' || v === 'lifting' ? v : null
+
 /**
  * file:// で開いたときは origin が null になり、replaceState が SecurityError を投げる。
  * 単一 HTML をダブルクリックで開く使い方（§10）を壊さないよう、その場合は黙って諦める。
@@ -148,12 +187,15 @@ const canWriteUrl = location.protocol !== 'file:'
 function writeUrl(): void {
   if (!canWriteUrl) return
   const q = new URLSearchParams()
-  q.set('b', state.bar)
-  q.set('s', state.shoe)
+  const [a, b] = state.panes
+  q.set('b', a.bar)
+  q.set('s', a.shoe)
   q.set('d', String(Math.round(state.p * 100)))
-  q.set('m', encodeBody(state.body))
-  if (state.frozen) {
-    q.set('f', encodeBody(state.frozen))
+  q.set('m', encodeBody(a.body))
+  if (state.comparing) {
+    q.set('f', encodeBody(b.body))
+    q.set('b2', b.bar)
+    q.set('s2', b.shoe)
   }
   try {
     history.replaceState(null, '', `${location.pathname}?${q}`)
@@ -166,33 +208,40 @@ function readUrl(): void {
   const q = new URLSearchParams(location.search)
   if (![...q.keys()].length) return
 
-  const bar = q.get('b')
-  if (bar === 'high' || bar === 'low') state.bar = bar
+  const [a, b] = state.panes
 
-  const shoe = q.get('s')
-  if (shoe === 'flat' || shoe === 'running' || shoe === 'lifting') state.shoe = shoe
+  const bar = asBar(q.get('b'))
+  if (bar) a.bar = bar
+
+  const shoe = asShoe(q.get('s'))
+  if (shoe) a.shoe = shoe
 
   // Rev.9 まで存在した「膝の前送り」の u= パラメータは無視する（古い共有リンク互換）
+  // Rev.10 まで存在した比較レイアウトの l= パラメータも同様に無視する
 
   const d = Number(q.get('d'))
   if (Number.isFinite(d)) state.p = Math.min(1, Math.max(0, d / 100))
 
   const m = q.get('m')
-  const body = m ? decodeBody(m) : null
-  if (body) {
-    state.body = body
-    state.presetId = presetIdFor(body)
+  const bodyA = m ? decodeBody(m) : null
+  if (bodyA) {
+    a.body = bodyA
+    a.presetId = presetIdFor(bodyA)
   }
 
   const f = q.get('f')
-  const frozen = f ? decodeBody(f) : null
-  if (frozen) state.frozen = frozen
+  const bodyB = f ? decodeBody(f) : null
+  if (bodyB) {
+    state.comparing = true
+    b.body = bodyB
+    b.presetId = presetIdFor(bodyB)
+    // b2/s2 の無い旧リンク（担ぎ・靴を強制共有していた頃）はペインAと同じにする
+    b.bar = asBar(q.get('b2')) ?? a.bar
+    b.shoe = asShoe(q.get('s2')) ?? a.shoe
+  }
 
-  // Rev.10 まで存在した比較レイアウトの l= パラメータは無視する（古い共有リンク互換）
-
-  tw.barMix.set(state.bar === 'low' ? 1 : 0, 0, 0)
-  tw.shoeH.set(SHOE_HEEL[state.shoe], 0, 0)
-  pushBody(0, 0)
+  pushPane(0, 0, 0)
+  pushPane(1, 0, 0)
 }
 
 // ---------------------------------------------------------------------------
@@ -207,182 +256,231 @@ const $ = <T extends Element>(sel: string): T => {
 
 const svg = $<SVGSVGElement>('#fig')
 const readout = $<HTMLDivElement>('#readout')
-const bodySimple = $<HTMLDivElement>('#bodySimple')
-const bodySliders = $<HTMLDivElement>('#bodySliders')
-const freezeBtn = $<HTMLButtonElement>('#freeze')
+const panesHost = $<HTMLDivElement>('#panes')
+const compareBtn = $<HTMLButtonElement>('#compareBtn')
 const notesPanel = $<HTMLElement>('#notes')
 const notesBtn = $<HTMLButtonElement>('#notesBtn')
 
-interface SliderSpec {
-  key: string
-  label: string
-  range: { min: number; max: number; step: number }
-  get: () => number
-  set: (v: number) => void
+const el = <K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className = '',
+  text = '',
+): HTMLElementTagNameMap[K] => {
+  const node = document.createElement(tag)
+  if (className) node.className = className
+  if (text) node.textContent = text
+  return node
 }
 
-/**
- * 常時表示は「深さ」だけ（§6 Rev.10）。深さは動作の変数で、身体の特徴ではない。
- * 足首の硬さは身体側へ移した：簡易設定では3段階トグル、詳細設定ではスライダー。
- */
-const MAIN_SLIDERS = new Set(['depth'])
+interface PaneSliderSpec {
+  key: 'femur' | 'torso' | 'shank' | 'rom'
+  label: string
+  range: { min: number; max: number; step: number }
+  get: (b: Body) => number
+  set: (b: Body, v: number) => Body
+}
+
+const PANE_SLIDERS: readonly PaneSliderSpec[] = [
+  { key: 'femur', label: '大腿', range: RANGES.segment, get: (b) => b.mFemur, set: (b, v) => ({ ...b, mFemur: v }) },
+  { key: 'torso', label: '上体', range: RANGES.segment, get: (b) => b.mTorso, set: (b, v) => ({ ...b, mTorso: v }) },
+  { key: 'shank', label: 'すね', range: RANGES.segment, get: (b) => b.mShank, set: (b, v) => ({ ...b, mShank: v }) },
+  { key: 'rom', label: '足首の硬さ', range: RANGES.rom, get: (b) => b.romDeg, set: (b, v) => ({ ...b, romDeg: v }) },
+]
 
 /** セグメント比のスライダー。動かすとプリセット選択が外れる（足首は別軸なので外さない） */
 const SEGMENT_SLIDERS = new Set(['femur', 'torso', 'shank'])
 
-const SLIDERS: readonly SliderSpec[] = [
-  {
-    key: 'depth',
-    label: '深さ',
-    range: RANGES.depth,
-    get: () => state.p,
-    set: (v) => {
-      state.p = v
-    },
-  },
-  {
-    key: 'femur',
-    label: '大腿',
-    range: RANGES.segment,
-    get: () => state.body.mFemur,
-    set: (v) => {
-      state.body = { ...state.body, mFemur: v }
-    },
-  },
-  {
-    key: 'torso',
-    label: '上体',
-    range: RANGES.segment,
-    get: () => state.body.mTorso,
-    set: (v) => {
-      state.body = { ...state.body, mTorso: v }
-    },
-  },
-  {
-    key: 'shank',
-    label: 'すね',
-    range: RANGES.segment,
-    get: () => state.body.mShank,
-    set: (v) => {
-      state.body = { ...state.body, mShank: v }
-    },
-  },
-  {
-    key: 'rom',
-    label: '足首の硬さ',
-    range: RANGES.rom,
-    get: () => state.body.romDeg,
-    set: (v) => {
-      state.body = { ...state.body, romDeg: v }
-    },
-  },
-]
-
-const inputs = new Map<string, HTMLInputElement>()
-
-function buildSliders(): void {
-  for (const spec of SLIDERS) {
-    const wrap = document.createElement('label')
-    wrap.className = 'slider'
-
-    const name = document.createElement('span')
-    name.textContent = spec.label
-
-    const input = document.createElement('input')
-    input.type = 'range'
-    input.min = String(spec.range.min)
-    input.max = String(spec.range.max)
-    input.step = String(spec.range.step)
-    input.value = String(spec.get())
-    // ドラッグ中は補間せず即座に追従させる（§8.2）
-    input.addEventListener('input', () => {
-      spec.set(Number(input.value))
-      // セグメント比を手で動かしたときだけプリセット選択を外す。
-      // 深さは「使い方」、足首は体型とは独立した軸なので、どちらも選択を維持する
-      if (SEGMENT_SLIDERS.has(spec.key)) state.presetId = null
-      pushBody(0)
-      syncButtons()
-      requestFrame()
-      scheduleUrl()
-    })
-
-    wrap.append(name, input)
-    inputs.set(spec.key, input)
-    $(MAIN_SLIDERS.has(spec.key) ? '#mainSliders' : '#bodySliders').append(wrap)
-  }
+interface PaneUI {
+  root: HTMLDivElement
+  modeSeg: HTMLDivElement
+  presetSeg: HTMLDivElement
+  ankleSeg: HTMLDivElement
+  barSeg: HTMLDivElement
+  shoeSeg: HTMLDivElement
+  simpleRow: HTMLDivElement
+  slidersRow: HTMLDivElement
+  inputs: Map<string, HTMLInputElement>
 }
 
-function buildPresets(): void {
-  const host = $<HTMLDivElement>('#presets')
-  for (const preset of PRESETS) {
-    const btn = document.createElement('button')
-    btn.textContent = preset.label
-    btn.dataset['v'] = preset.id
-    btn.addEventListener('click', () => {
-      // プリセットが設定するのはセグメント比だけ。足首は独立したトグルなので保持する（Rev.10）
-      state.body = { ...preset.body, romDeg: state.body.romDeg }
-      state.presetId = preset.id
-      pushBody(DUR)
-      syncInputs()
-      syncButtons()
-      requestFrame()
-      scheduleUrl()
-    })
-    host.append(btn)
-  }
+function buildSlider(
+  host: HTMLElement,
+  label: string,
+  range: { min: number; max: number; step: number },
+  value: number,
+  onInput: (v: number) => void,
+): HTMLInputElement {
+  const wrap = el('label', 'slider')
+  wrap.append(el('span', '', label))
+  const input = el('input')
+  input.type = 'range'
+  input.min = String(range.min)
+  input.max = String(range.max)
+  input.step = String(range.step)
+  input.value = String(value)
+  // ドラッグ中は補間せず即座に追従させる（§8.2）
+  input.addEventListener('input', () => onInput(Number(input.value)))
+  wrap.append(input)
+  host.append(wrap)
+  return input
 }
 
-function buildAnkle(): void {
-  const host = $<HTMLDivElement>('#ankle')
-  for (const level of ANKLE_LEVELS) {
-    const btn = document.createElement('button')
-    btn.textContent = level.label
-    btn.dataset['v'] = String(level.deg)
-    btn.addEventListener('click', () => {
-      state.body = { ...state.body, romDeg: level.deg }
-      pushBody(DUR)
-      syncInputs()
-      syncButtons()
-      requestFrame()
-      scheduleUrl()
-    })
-    host.append(btn)
+function buildSeg(
+  className: string,
+  ariaLabel: string,
+  buttons: readonly { v: string; label: string; sub?: string }[],
+  onPick: (v: string) => void,
+): HTMLDivElement {
+  const seg = el('div', `seg ${className}`)
+  seg.setAttribute('role', 'group')
+  seg.setAttribute('aria-label', ariaLabel)
+  for (const spec of buttons) {
+    const btn = el('button', '', spec.label)
+    btn.dataset['v'] = spec.v
+    if (spec.sub) btn.append(el('small', '', spec.sub))
+    seg.append(btn)
   }
-}
-
-function wireSegment(sel: string, onPick: (value: string) => void): void {
-  $(sel).addEventListener('click', (ev) => {
+  seg.addEventListener('click', (ev) => {
     const btn = (ev.target as HTMLElement).closest('button')
     const v = btn?.dataset['v']
     if (v) onPick(v)
   })
+  return seg
 }
 
-function syncInputs(): void {
-  for (const spec of SLIDERS) {
-    const input = inputs.get(spec.key)
-    if (input) input.value = String(spec.get())
+function buildPane(i: 0 | 1): PaneUI {
+  const s = state.panes[i]
+  const root = el('div', i === 0 ? 'pane' : 'pane pane-b')
+
+  // --- 身体の特徴（簡易｜詳細） ---
+  const modeSeg = buildSeg('mode', '設定モード', [
+    { v: 'simple', label: '簡易' },
+    { v: 'detail', label: '詳細' },
+  ], (v) => {
+    if (v !== 'simple' && v !== 'detail') return
+    s.bodyMode = v
+    sync()
+  })
+
+  const presetSeg = buildSeg('presets', '体型プリセット',
+    PRESETS.map((p) => ({ v: p.id, label: p.label })),
+    (v) => {
+      const preset = PRESETS.find((p) => p.id === v)
+      if (!preset) return
+      // プリセットが設定するのはセグメント比だけ。足首は独立したトグルなので保持する（Rev.10）
+      s.body = { ...preset.body, romDeg: s.body.romDeg }
+      s.presetId = preset.id
+      pushBody(i, DUR)
+      sync()
+      requestFrame()
+      scheduleUrl()
+    })
+
+  const ankleSeg = buildSeg('presets', '足首の硬さ',
+    ANKLE_LEVELS.map((l) => ({ v: String(l.deg), label: l.label })),
+    (v) => {
+      s.body = { ...s.body, romDeg: Number(v) }
+      pushBody(i, DUR)
+      sync()
+      requestFrame()
+      scheduleUrl()
+    })
+
+  const labeled = el('div', 'labeled-seg')
+  labeled.append(el('span', 'seg-label', '足首'), ankleSeg)
+
+  const simpleRow = el('div', 'row row-buttons grow')
+  simpleRow.append(presetSeg, labeled)
+
+  const head = el('div', 'row row-buttons')
+  head.append(el('span', 'section-label', '身体の特徴'), modeSeg, simpleRow)
+
+  const slidersRow = el('div', 'row sliders')
+  slidersRow.hidden = true
+  const inputs = new Map<string, HTMLInputElement>()
+  for (const spec of PANE_SLIDERS) {
+    const input = buildSlider(slidersRow, spec.label, spec.range, spec.get(s.body), (v) => {
+      s.body = spec.set(s.body, v)
+      // セグメント比を手で動かしたときだけプリセット選択を外す。足首は独立した軸なので維持する
+      if (SEGMENT_SLIDERS.has(spec.key)) s.presetId = null
+      pushBody(i, 0)
+      sync()
+      requestFrame()
+      scheduleUrl()
+    })
+    inputs.set(spec.key, input)
+  }
+
+  const bodySection = el('div', 'body-section')
+  bodySection.append(head, slidersRow)
+
+  // --- 道具：担ぎ位置・シューズ ---
+  const barSeg = buildSeg('', '担ぎ位置', [
+    { v: 'high', label: 'ハイバー' },
+    { v: 'low', label: 'ローバー' },
+  ], (v) => {
+    const bar = asBar(v)
+    if (!bar) return
+    s.bar = bar
+    tweens[i].barMix.set(bar === 'low' ? 1 : 0, DUR, performance.now())
+    sync()
+    requestFrame()
+    scheduleUrl()
+  })
+
+  const shoeSeg = buildSeg('shoe', 'シューズ', [
+    { v: 'flat', label: 'フラット' },
+    { v: 'running', label: 'スニーカー', sub: '(10mm)' },
+    { v: 'lifting', label: 'リフティング', sub: '(25mm)' },
+  ], (v) => {
+    const shoe = asShoe(v)
+    if (!shoe) return
+    s.shoe = shoe
+    tweens[i].shoeH.set(SHOE_HEEL[shoe], DUR, performance.now())
+    sync()
+    requestFrame()
+    scheduleUrl()
+  })
+
+  const tools = el('div', 'row row-buttons')
+  tools.append(barSeg, shoeSeg)
+
+  root.append(bodySection, tools)
+  panesHost.append(root)
+
+  return { root, modeSeg, presetSeg, ankleSeg, barSeg, shoeSeg, simpleRow, slidersRow, inputs }
+}
+
+let panes: [PaneUI, PaneUI]
+let depthInput: HTMLInputElement
+
+function press(seg: HTMLElement, value: string | null): void {
+  for (const b of seg.querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', String(b.dataset['v'] === value))
   }
 }
 
-function syncButtons(): void {
-  const press = (sel: string, value: string | null) => {
-    for (const b of $(sel).querySelectorAll('button')) {
-      b.setAttribute('aria-pressed', String(b.dataset['v'] === value))
+/** state → DOM（ボタンの点灯・スライダー位置・表示切替）を一括同期 */
+function sync(): void {
+  for (const i of [0, 1] as const) {
+    const s = state.panes[i]
+    const ui = panes[i]
+    press(ui.barSeg, s.bar)
+    press(ui.shoeSeg, s.shoe)
+    press(ui.presetSeg, s.presetId)
+    // 3段階のどれとも一致しない値（詳細スライダーで設定）のときは、どれも点灯しない
+    press(ui.ankleSeg, String(s.body.romDeg))
+    press(ui.modeSeg, s.bodyMode)
+    ui.simpleRow.hidden = s.bodyMode !== 'simple'
+    ui.slidersRow.hidden = s.bodyMode !== 'detail'
+    for (const spec of PANE_SLIDERS) {
+      const input = ui.inputs.get(spec.key)
+      if (input) input.value = String(spec.get(s.body))
     }
   }
-  press('#bar', state.bar)
-  press('#shoe', state.shoe)
-  press('#presets', state.presetId)
-  // 3段階のどれとも一致しない値（詳細スライダーで設定）のときは、どれも点灯しない
-  press('#ankle', String(state.body.romDeg))
-  press('#bodyMode', state.bodyMode)
-
-  bodySimple.hidden = state.bodyMode !== 'simple'
-  bodySliders.hidden = state.bodyMode !== 'detail'
-
-  freezeBtn.textContent = state.frozen ? '固定を解除' : '体格を固定'
-  freezeBtn.dataset['on'] = String(state.frozen !== null)
+  panes[1].root.hidden = !state.comparing
+  compareBtn.setAttribute('aria-pressed', String(state.comparing))
+  compareBtn.dataset['on'] = String(state.comparing)
+  depthInput.value = String(state.p)
 }
 
 // ---------------------------------------------------------------------------
@@ -398,8 +496,8 @@ function requestFrame(): void {
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k
 
-function currentBar(now: number): BarParams {
-  const k = tw.barMix.read(now)
+function currentBar(t: PaneTweens, now: number): BarParams {
+  const k = t.barMix.read(now)
   return {
     r: lerp(BAR_PARAMS.high.r, BAR_PARAMS.low.r, k),
     d: lerp(BAR_PARAMS.high.d, BAR_PARAMS.low.d, k),
@@ -409,85 +507,61 @@ function currentBar(now: number): BarParams {
 function draw(now: number): void {
   frameHandle = 0
 
-  const shared = {
-    bar: currentBar(now),
-    shoe: { h: tw.shoeH.read(now) },
-    // 足首の可動域は常に使い切る（Rev.9）。図は「その体格・その担ぎ位置での最小前傾」を示す。
-    // θ_s = usage × (ROM + φ) なので、θ_s を減らした動きは足首の硬さスライダーで同一に再現できる
-    shankUsage: 1,
-    p: state.p,
-  }
-
-  const liveBody: Body = {
-    mShank: tw.mShank.read(now),
-    mFemur: tw.mFemur.read(now),
-    mTorso: tw.mTorso.read(now),
-    foot: tw.foot.read(now),
-    romDeg: tw.romDeg.read(now),
-  }
-
-  const comparing = state.frozen !== null
-  const liveInput: PoseInput = { body: liveBody, ...shared }
-  const livePose = solvePose(liveInput)
-
+  const visible: readonly (0 | 1)[] = state.comparing ? [0, 1] : [0]
   const bodies: SceneBody[] = []
 
-  if (state.frozen) {
-    // 固定した体格。深さ・背屈・担ぎ位置・靴は共有する（§8.5）
-    const frozenInput: PoseInput = { body: state.frozen, ...shared }
+  for (const i of visible) {
+    const t = tweens[i]
+    const input: PoseInput = {
+      body: {
+        mShank: t.mShank.read(now),
+        mFemur: t.mFemur.read(now),
+        mTorso: t.mTorso.read(now),
+        foot: t.foot.read(now),
+        romDeg: t.romDeg.read(now),
+      },
+      bar: currentBar(t, now),
+      shoe: { h: t.shoeH.read(now) },
+      // 足首の可動域は常に使い切る（Rev.9）。図は「その体格・その担ぎ位置での最小前傾」を示す。
+      // θ_s = usage × (ROM + φ) なので、θ_s を減らした動きは足首の硬さスライダーで同一に再現できる
+      shankUsage: 1,
+      p: state.p,
+    }
     bodies.push({
-      pose: solvePose(frozenInput),
+      pose: solvePose(input),
+      // 立位ゴーストとバーの軌跡は Rev.10 で廃止（§4.9 / §8.2）。
+      // どちらも本体以外の描き込みが「もう1人いる」等の誤読を生むため
       ghost: null,
       trail: [],
-      color: COLORS.bodyB,
-      label: '固定した体',
-      faded: true,
+      color: i === 0 ? COLORS.bodyA : COLORS.bodyB,
+      label: '',
+      faded: false,
     })
   }
 
-  bodies.push({
-    pose: livePose,
-    // 立位ゴーストとバーの軌跡は Rev.10 で廃止（§4.9 / §8.2）。
-    // どちらも本体以外の描き込みが「もう1人いる」等の誤読を生むため
-    ghost: null,
-    trail: [],
-    color: COLORS.bodyA,
-    label: comparing ? '操作中の体' : '',
-    faded: false,
-  })
-
   const scene: Scene = {
-    // 比較は「並べる」のみ（Rev.10 で「重ねる」トグルを削除。§8.5）
-    layout: comparing ? 'side' : 'single',
+    // 比較は「並べる」のみ（Rev.10 で「重ねる」トグルを削除。§8.5）。
+    // ペインの並び（左=A/青、右=B/コーラル）と図の並びを一致させる
+    layout: state.comparing ? 'side' : 'single',
     bodies,
     showIpfLine: true,
   }
   renderScene(svg, scene)
   updateReadout(bodies)
 
-  if (Object.values(tw).some((t) => t.animating)) requestFrame()
+  const animating = tweens.some((t) => Object.values(t).some((tw: Tween) => tw.animating))
+  if (animating) requestFrame()
 }
 
 function updateReadout(bodies: readonly SceneBody[]): void {
   readout.replaceChildren(
     ...bodies.map((b) => {
-      const item = document.createElement('div')
-      item.className = 'item'
+      const item = el('div', 'item')
 
-      const cap = document.createElement('span')
-      cap.className = 'cap'
-      cap.textContent = b.label || '上体角度'
-      cap.style.color = b.label ? b.color : ''
-
-      const val = document.createElement('span')
-      val.className = 'val'
+      const cap = el('span', 'cap', '上体角度')
+      const val = el('span', 'val', String(Math.round(b.pose.torsoDeg)))
       val.style.color = b.color
-      val.textContent = String(Math.round(b.pose.torsoDeg))
-
-      const deg = document.createElement('span')
-      deg.className = 'deg'
-      deg.textContent = '°'
-      val.append(deg)
+      val.append(el('span', 'deg', '°'))
 
       item.append(cap, val)
       return item
@@ -511,38 +585,25 @@ function scheduleUrl(): void {
 
 function init(): void {
   readUrl()
-  buildSliders()
-  buildPresets()
-  buildAnkle()
+  panes = [buildPane(0), buildPane(1)]
 
-  wireSegment('#bodyMode', (v) => {
-    if (v !== 'simple' && v !== 'detail') return
-    state.bodyMode = v
-    syncButtons()
-  })
-
-  wireSegment('#bar', (v) => {
-    if (v !== 'high' && v !== 'low') return
-    state.bar = v
-    tw.barMix.set(v === 'low' ? 1 : 0, DUR, performance.now())
-    syncButtons()
+  depthInput = buildSlider($('#depthRow'), '深さ', RANGES.depth, state.p, (v) => {
+    state.p = v
     requestFrame()
     scheduleUrl()
   })
 
-  wireSegment('#shoe', (v) => {
-    if (v !== 'flat' && v !== 'running' && v !== 'lifting') return
-    state.shoe = v
-    tw.shoeH.set(SHOE_HEEL[v], DUR, performance.now())
-    syncButtons()
-    requestFrame()
-    scheduleUrl()
-  })
-
-  freezeBtn.addEventListener('click', () => {
-    // 固定するのは体格パラメータだけ（§8.5）
-    state.frozen = state.frozen ? null : { ...state.body }
-    syncButtons()
+  compareBtn.addEventListener('click', () => {
+    state.comparing = !state.comparing
+    if (state.comparing) {
+      // 比較開始時はペインBをペインAの完全なコピーとして始める（§8.5）。
+      // 「同じ状態から片方だけ変える」という比較の起点を毎回そろえるため。
+      // ペインUIの閉包が state.panes[1] を参照し続けるので、差し替えではなく上書きする
+      const a = state.panes[0]
+      Object.assign(state.panes[1], { ...a, body: { ...a.body } })
+      pushPane(1, 0)
+    }
+    sync()
     requestFrame()
     scheduleUrl()
   })
@@ -554,8 +615,7 @@ function init(): void {
   notesBtn.addEventListener('click', () => toggleNotes(notesPanel.hidden))
   $('#notesClose').addEventListener('click', () => toggleNotes(false))
 
-  syncInputs()
-  syncButtons()
+  sync()
   requestFrame()
 }
 
