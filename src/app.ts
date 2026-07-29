@@ -15,7 +15,7 @@ import {
   type Shoe,
 } from './geometry'
 import { ANKLE_LEVELS, DEFAULT_PRESET, PRESETS, RANGES } from './presets'
-import { COLORS, renderScene, type Layout, type Scene, type SceneBody } from './render'
+import { COLORS, renderScene, type Scene, type SceneBody } from './render'
 
 /** 補間アニメーションの長さ（§8.1） */
 const DUR = 300
@@ -79,7 +79,6 @@ interface State {
   bodyMode: 'simple' | 'detail'
   /** 固定した体格（§8.5）。null なら単体表示 */
   frozen: Body | null
-  layout: Exclude<Layout, 'single'>
 }
 
 const state: State = {
@@ -90,8 +89,6 @@ const state: State = {
   presetId: DEFAULT_PRESET.id,
   bodyMode: 'simple',
   frozen: null,
-  // 既定は「並べる」。重ねると2体の脛と足がほぼ完全に重なり、後ろの体は上体しか見えない
-  layout: 'side',
 }
 
 const tw = {
@@ -157,7 +154,6 @@ function writeUrl(): void {
   q.set('m', encodeBody(state.body))
   if (state.frozen) {
     q.set('f', encodeBody(state.frozen))
-    q.set('l', state.layout)
   }
   try {
     history.replaceState(null, '', `${location.pathname}?${q}`)
@@ -192,8 +188,7 @@ function readUrl(): void {
   const frozen = f ? decodeBody(f) : null
   if (frozen) state.frozen = frozen
 
-  const l = q.get('l')
-  if (l === 'overlay' || l === 'side') state.layout = l
+  // Rev.10 まで存在した比較レイアウトの l= パラメータは無視する（古い共有リンク互換）
 
   tw.barMix.set(state.bar === 'low' ? 1 : 0, 0, 0)
   tw.shoeH.set(SHOE_HEEL[state.shoe], 0, 0)
@@ -215,7 +210,6 @@ const readout = $<HTMLDivElement>('#readout')
 const bodySimple = $<HTMLDivElement>('#bodySimple')
 const bodySliders = $<HTMLDivElement>('#bodySliders')
 const freezeBtn = $<HTMLButtonElement>('#freeze')
-const layoutSeg = $<HTMLDivElement>('#layout')
 const notesPanel = $<HTMLElement>('#notes')
 const notesBtn = $<HTMLButtonElement>('#notesBtn')
 
@@ -383,14 +377,12 @@ function syncButtons(): void {
   // 3段階のどれとも一致しない値（詳細スライダーで設定）のときは、どれも点灯しない
   press('#ankle', String(state.body.romDeg))
   press('#bodyMode', state.bodyMode)
-  press('#layout', state.layout)
 
   bodySimple.hidden = state.bodyMode !== 'simple'
   bodySliders.hidden = state.bodyMode !== 'detail'
 
   freezeBtn.textContent = state.frozen ? '固定を解除' : '体格を固定'
   freezeBtn.dataset['on'] = String(state.frozen !== null)
-  layoutSeg.hidden = state.frozen === null
 }
 
 // ---------------------------------------------------------------------------
@@ -465,7 +457,8 @@ function draw(now: number): void {
   })
 
   const scene: Scene = {
-    layout: comparing ? state.layout : 'single',
+    // 比較は「並べる」のみ（Rev.10 で「重ねる」トグルを削除。§8.5）
+    layout: comparing ? 'side' : 'single',
     bodies,
     showIpfLine: true,
   }
@@ -541,14 +534,6 @@ function init(): void {
     if (v !== 'flat' && v !== 'running' && v !== 'lifting') return
     state.shoe = v
     tw.shoeH.set(SHOE_HEEL[v], DUR, performance.now())
-    syncButtons()
-    requestFrame()
-    scheduleUrl()
-  })
-
-  wireSegment('#layout', (v) => {
-    if (v !== 'overlay' && v !== 'side') return
-    state.layout = v
     syncButtons()
     requestFrame()
     scheduleUrl()
