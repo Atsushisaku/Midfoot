@@ -14,25 +14,38 @@
       </section>
 
       <section class="controls">
+        <!-- 道具・動作：その場で変えられるもの -->
         <div class="row row-buttons">
           <div class="seg" id="bar" role="group" aria-label="担ぎ位置">
             <button data-v="high">ハイバー</button>
             <button data-v="low">ローバー</button>
           </div>
-          <div class="seg" id="shoe" role="group" aria-label="靴">
+          <div class="seg shoe" id="shoe" role="group" aria-label="シューズ">
             <button data-v="flat">フラット</button>
-            <button data-v="running">20mm</button>
-            <button data-v="lifting">LS</button>
+            <button data-v="running">スニーカー<small>&#8593;20mm</small></button>
+            <button data-v="lifting">リフティング<small>&#8593;25mm</small></button>
           </div>
-          <div class="seg presets" id="presets" role="group" aria-label="体型プリセット"></div>
+          <div class="row sliders" id="mainSliders"></div>
         </div>
 
-        <div class="row sliders" id="mainSliders"></div>
-
-        <details id="bodyDetails">
-          <summary>体格を調整</summary>
-          <div class="sliders" id="bodySliders"></div>
-        </details>
+        <!-- 身体の特徴：努力では変えられない・変えにくいもの -->
+        <div class="body-section">
+          <div class="row row-buttons">
+            <span class="section-label">身体の特徴</span>
+            <div class="seg mode" id="bodyMode" role="group" aria-label="設定モード">
+              <button data-v="simple">簡易</button>
+              <button data-v="detail">詳細</button>
+            </div>
+            <div class="row row-buttons grow" id="bodySimple">
+              <div class="seg presets" id="presets" role="group" aria-label="体型プリセット"></div>
+              <div class="labeled-seg">
+                <span class="seg-label">足首</span>
+                <div class="seg presets" id="ankle" role="group" aria-label="足首の硬さ"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row sliders" id="bodySliders" hidden></div>
+        </div>
 
         <div class="row row-buttons">
           <button class="wide" id="freeze">体格を固定</button>

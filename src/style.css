@@ -162,6 +162,26 @@ body {
   font-weight: 600;
 }
 
+/* シューズは名前＋かかと高さの2段表示（Rev.10）。フラットは下段なし */
+.seg.shoe button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.15;
+}
+
+.seg.shoe button small {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.seg.shoe button[aria-pressed='true'] small {
+  color: rgb(255 255 255 / 0.85);
+}
+
 button.wide,
 button.ghostbtn {
   appearance: none;
@@ -269,21 +289,41 @@ button.ghostbtn {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
 }
 
-details {
+/* --- 身体の特徴（簡易／詳細）------------------------------------------------ */
+
+.body-section {
   border-top: 1px dashed var(--border);
-  padding-top: 6px;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-summary {
+.section-label {
   font-size: 14px;
   color: var(--muted);
-  cursor: pointer;
-  padding: 4px 0;
-  user-select: none;
+  white-space: nowrap;
 }
 
-details[open] summary {
-  margin-bottom: 4px;
+.seg.mode button {
+  font-size: 14px;
+  padding: 9px 14px;
+}
+
+.row.grow {
+  flex: 1 1 auto;
+}
+
+.labeled-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seg-label {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* --- 注記 ---------------------------------------------------------------- */

@@ -40,12 +40,29 @@ export const PRESETS: readonly Preset[] = [
   },
   {
     id: 'long-shank',
-    label: '脛が長い',
+    label: 'すねが長い',
     body: { mShank: 1.18, mFemur: 0.95, mTorso: 0.95, foot: FOOT, romDeg: 30 },
   },
 ]
 
 export const DEFAULT_PRESET = PRESETS[0]!
+
+/**
+ * 簡易設定の「足首の硬さ」3段階（Rev.10）。
+ * ふつう = 30° は既定値と一致させ、初期表示の見た目を変えない。
+ * 硬め 15° は仕様 §8.4 の「硬い」例示、柔らかめ 35° はスライダー上限
+ * （バーベルスクワットで実際に使う範囲の上限。§13-2）。
+ */
+export interface AnkleLevel {
+  readonly deg: number
+  readonly label: string
+}
+
+export const ANKLE_LEVELS: readonly AnkleLevel[] = [
+  { deg: 15, label: '硬め' },
+  { deg: 30, label: 'ふつう' },
+  { deg: 35, label: '柔らかめ' },
+]
 
 /** スライダーの範囲（仕様 §13-2。動かしながら調整する暫定値） */
 export const RANGES = {

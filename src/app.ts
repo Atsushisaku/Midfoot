@@ -16,7 +16,7 @@ import {
   type Shoe,
   type Vec,
 } from './geometry'
-import { DEFAULT_PRESET, PRESETS, RANGES } from './presets'
+import { ANKLE_LEVELS, DEFAULT_PRESET, PRESETS, RANGES } from './presets'
 import { COLORS, renderScene, type Layout, type Scene, type SceneBody } from './render'
 
 /** 補間アニメーションの長さ（§8.1） */
@@ -79,6 +79,8 @@ interface State {
   shoe: Shoe
   p: number
   presetId: string | null
+  /** 身体の特徴の表示モード（§6 Rev.10）。URL には保存しない表示上の状態 */
+  bodyMode: 'simple' | 'detail'
   /** 固定した体格（§8.5）。null なら単体表示 */
   frozen: Body | null
   layout: Exclude<Layout, 'single'>
@@ -90,6 +92,7 @@ const state: State = {
   shoe: 'flat',
   p: 1,
   presetId: DEFAULT_PRESET.id,
+  bodyMode: 'simple',
   frozen: null,
   // 既定は「並べる」。重ねると2体の脛と足がほぼ完全に重なり、後ろの体は上体しか見えない
   layout: 'side',
@@ -120,6 +123,16 @@ function pushBody(dur: number, now = performance.now()): void {
 
 const encodeBody = (b: Body) =>
   [b.mShank, b.mFemur, b.mTorso, b.foot, b.romDeg].map((n) => Math.round(n * 100)).join('.')
+
+/**
+ * プリセット判定はセグメント比だけで行い、足首（romDeg）は見ない（Rev.10）。
+ * 足首の硬さは簡易設定でも独立したトグルなので、体型の一致とは別の軸。
+ */
+const sameSegments = (a: Body, b: Body) =>
+  a.mShank === b.mShank && a.mFemur === b.mFemur && a.mTorso === b.mTorso
+
+const presetIdFor = (body: Body): string | null =>
+  PRESETS.find((p) => sameSegments(p.body, body))?.id ?? null
 
 function decodeBody(s: string): Body | null {
   const n = s.split('.').map(Number)
@@ -176,7 +189,7 @@ function readUrl(): void {
   const body = m ? decodeBody(m) : null
   if (body) {
     state.body = body
-    state.presetId = PRESETS.find((p) => encodeBody(p.body) === m)?.id ?? null
+    state.presetId = presetIdFor(body)
   }
 
   const f = q.get('f')
@@ -203,6 +216,8 @@ const $ = <T extends Element>(sel: string): T => {
 
 const svg = $<SVGSVGElement>('#fig')
 const readout = $<HTMLDivElement>('#readout')
+const bodySimple = $<HTMLDivElement>('#bodySimple')
+const bodySliders = $<HTMLDivElement>('#bodySliders')
 const freezeBtn = $<HTMLButtonElement>('#freeze')
 const layoutSeg = $<HTMLDivElement>('#layout')
 const notesPanel = $<HTMLElement>('#notes')
@@ -217,14 +232,13 @@ interface SliderSpec {
 }
 
 /**
- * 常時表示は「深さ」と「足首の硬さ」の2本だけ（§6）。
- * 足首の硬さを常時側に置くのは、上体角度に対する支配力が全入力中で最大（約46°）で、
- * かつ靴ボタンとセットで説明する対象だから。
+ * 常時表示は「深さ」だけ（§6 Rev.10）。深さは動作の変数で、身体の特徴ではない。
+ * 足首の硬さは身体側へ移した：簡易設定では3段階トグル、詳細設定ではスライダー。
  */
-const MAIN_SLIDERS = new Set(['depth', 'rom'])
+const MAIN_SLIDERS = new Set(['depth'])
 
-/** 体格そのものを表すスライダー。動かすとプリセット選択が外れる */
-const BODY_SLIDERS = new Set(['rom', 'femur', 'torso', 'shank'])
+/** セグメント比のスライダー。動かすとプリセット選択が外れる（足首は別軸なので外さない） */
+const SEGMENT_SLIDERS = new Set(['femur', 'torso', 'shank'])
 
 const SLIDERS: readonly SliderSpec[] = [
   {
@@ -234,15 +248,6 @@ const SLIDERS: readonly SliderSpec[] = [
     get: () => state.p,
     set: (v) => {
       state.p = v
-    },
-  },
-  {
-    key: 'rom',
-    label: '足首の硬さ',
-    range: RANGES.rom,
-    get: () => state.body.romDeg,
-    set: (v) => {
-      state.body = { ...state.body, romDeg: v }
     },
   },
   {
@@ -265,11 +270,20 @@ const SLIDERS: readonly SliderSpec[] = [
   },
   {
     key: 'shank',
-    label: '脛',
+    label: 'すね',
     range: RANGES.segment,
     get: () => state.body.mShank,
     set: (v) => {
       state.body = { ...state.body, mShank: v }
+    },
+  },
+  {
+    key: 'rom',
+    label: '足首の硬さ',
+    range: RANGES.rom,
+    get: () => state.body.romDeg,
+    set: (v) => {
+      state.body = { ...state.body, romDeg: v }
     },
   },
 ]
@@ -293,9 +307,9 @@ function buildSliders(): void {
     // ドラッグ中は補間せず即座に追従させる（§8.2）
     input.addEventListener('input', () => {
       spec.set(Number(input.value))
-      // 体格そのものを手で動かしたときだけプリセット選択を外す。
-      // 深さは「使い方」であって体格ではないので、選択を維持する
-      if (BODY_SLIDERS.has(spec.key)) state.presetId = null
+      // セグメント比を手で動かしたときだけプリセット選択を外す。
+      // 深さは「使い方」、足首は体型とは独立した軸なので、どちらも選択を維持する
+      if (SEGMENT_SLIDERS.has(spec.key)) state.presetId = null
       pushBody(0)
       syncButtons()
       requestFrame()
@@ -315,8 +329,27 @@ function buildPresets(): void {
     btn.textContent = preset.label
     btn.dataset['v'] = preset.id
     btn.addEventListener('click', () => {
-      state.body = { ...preset.body }
+      // プリセットが設定するのはセグメント比だけ。足首は独立したトグルなので保持する（Rev.10）
+      state.body = { ...preset.body, romDeg: state.body.romDeg }
       state.presetId = preset.id
+      pushBody(DUR)
+      syncInputs()
+      syncButtons()
+      requestFrame()
+      scheduleUrl()
+    })
+    host.append(btn)
+  }
+}
+
+function buildAnkle(): void {
+  const host = $<HTMLDivElement>('#ankle')
+  for (const level of ANKLE_LEVELS) {
+    const btn = document.createElement('button')
+    btn.textContent = level.label
+    btn.dataset['v'] = String(level.deg)
+    btn.addEventListener('click', () => {
+      state.body = { ...state.body, romDeg: level.deg }
       pushBody(DUR)
       syncInputs()
       syncButtons()
@@ -351,7 +384,13 @@ function syncButtons(): void {
   press('#bar', state.bar)
   press('#shoe', state.shoe)
   press('#presets', state.presetId)
+  // 3段階のどれとも一致しない値（詳細スライダーで設定）のときは、どれも点灯しない
+  press('#ankle', String(state.body.romDeg))
+  press('#bodyMode', state.bodyMode)
   press('#layout', state.layout)
+
+  bodySimple.hidden = state.bodyMode !== 'simple'
+  bodySliders.hidden = state.bodyMode !== 'detail'
 
   freezeBtn.textContent = state.frozen ? '固定を解除' : '体格を固定'
   freezeBtn.dataset['on'] = String(state.frozen !== null)
@@ -493,6 +532,13 @@ function init(): void {
   readUrl()
   buildSliders()
   buildPresets()
+  buildAnkle()
+
+  wireSegment('#bodyMode', (v) => {
+    if (v !== 'simple' && v !== 'detail') return
+    state.bodyMode = v
+    syncButtons()
+  })
 
   wireSegment('#bar', (v) => {
     if (v !== 'high' && v !== 'low') return
