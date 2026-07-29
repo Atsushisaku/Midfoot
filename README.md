@@ -31,7 +31,11 @@ npm run report   # 上体角度の一覧表を出力（数値調整用）
 npm run build    # dist/index.html を単一ファイルで出力
 ```
 
-成果物は **外部依存なしの単一 HTML（約 20 KB）**。オフラインで動く（ジムの Wi-Fi 環境が悪い前提）。
+成果物は **単一 HTML（約 20 KB）**。オフラインで動く（ジムの Wi-Fi 環境が悪い前提）。
+
+唯一の外部参照はアクセス計測（GoatCounter）の `<script>` 1 行で、これは `async` なので
+**取得に失敗してもアプリは通常どおり動く**。Cookie も IP も保存しない。計測が不要なら
+`index.html` の該当行を消せば、外部参照ゼロの単一 HTML に戻る。
 
 `main` に push すると GitHub Actions がテストを通してから Pages に公開する。
 電波が不安な現場で使うなら、公開ページをブラウザで保存するか `dist/index.html` を
