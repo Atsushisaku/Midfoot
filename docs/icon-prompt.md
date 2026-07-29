@@ -104,27 +104,37 @@ through), never filled. The vertical line and the floor line are thinner, about
 
 ## 付記：デモ動画の作り方（2026-07）
 
-SNS 用の短いデモは `docs/midfoot-demo.mp4`（横）と `docs/midfoot-demo-vertical.mp4`（縦）。
+SNS 用の短いデモは `docs/midfoot-demo.mp4`（横 1280×720）と
+`docs/midfoot-demo-vertical.mp4`（縦 1080×1920）。どちらも 15.2 秒。
 
-手順と注意点：
+### 採用：Playwright で本物の動画を録る（`scripts/record-demo.mjs`）
 
-1. **公開中のライブ版**をブラウザ自動操作で録画する（GIF 出力のみ）
-2. **深さスライダーは JS で値を変えず、トラック上を実際にクリックする。**
-   録画ツールはクリック等の操作しかフレームに残さないので、JS で値を変えても
-   フレームが増えない
-3. 操作は**1回のバッチにまとめる**。バッチをまたぐとその待ち時間がフレーム間隔になる
-4. **録画は 50 フレームが上限。** これが滑らかさの制約になるので、
-   場面ごとに録画を分けて撮り、ffmpeg の `concat` で繋ぐ。
-   1回の録画で 1 クリック ≈ 2 フレームなので、**動きの区間は 24 ステップ**が上限。
-   深さ 0→100 を 24 分割すれば 47 フレーム（25fps で 1.9 秒）の滑らかな降下になる
-5. 録画ツールはフレーム間隔を指定できず、**操作の実時間がそのまま間隔になる**
-   （そのままだと 47 フレームで約3分の紙芝居）。`scripts/retime-gif.mjs` で
-   GIF の delay を一定値に書き換える：`node scripts/retime-gif.mjs in.gif out.gif 4 4`（40ms＝25fps）
-6. MP4 化（ffmpeg）：
-   - 横：`-c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart -vf fps=25`
-   - 縦：図の部分を切り出して拡大し、操作パネルを下に積む。
-     `crop=760:430:420:0` と `crop=1568:316:0:430` を `vstack` して 1080×1920 に pad。
-     全体をそのまま縮小すると図が小さすぎて読めない
+```
+npm i playwright            # 作業用ディレクトリで可。リポジトリには入れていない
+node scripts/record-demo.mjs ./out
+```
+
+- `chromium.launch({ channel: 'chrome' })` で**PC にある Chrome をそのまま使う**。
+  Playwright 専用ブラウザ（約130MB）のダウンロードが不要
+- `recordVideo` はブラウザの描画をそのまま録るので、**アプリ自身の
+  アニメーションが滑らかに入る**。25fps の WebM が出る
+- 見せ場はアプリの **「再生」ボタン**に任せる。深さを外から刻む必要がない
+- 停止位置がぶれるので、区切りで `setDepth(1)` を入れてボトムに揃える
+- WebM → MP4：`-c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart`
+- 縦型：全体を縮小すると図が読めない。図の部分を切り出して拡大し、
+  操作パネルを下に積む。
+  `crop=760:430:270:0` と `crop=1280:284:0:436` を `vstack` して 1080×1920 に pad
+
+### 不採用：ブラウザ拡張の GIF 録画
+
+最初はこれで作ったが、**1回の録画あたり50フレームが上限**で、
+1クリック≒2フレーム消費するため動きが 24 段階までしか刻めない。
+場面ごとに分割して `concat` すれば繋げられるが、それでも
+アプリ自身のアニメーション（300ms の補間）は原理的に captured できない。
+
+またこのツールは**フレーム間隔を指定できず、操作の実時間がそのまま間隔になる**
+（47 フレームで約3分の紙芝居になる）。`scripts/retime-gif.mjs` で GIF の
+delay を書き換えれば直せる：`node scripts/retime-gif.mjs in.gif out.gif 4 4`（40ms＝25fps）。
 
 > **`retime-gif.mjs` の実装注意**：GCE のサブブロックは
 > `[size=4][packed][delay lo][delay hi][transparent idx]` なので、
