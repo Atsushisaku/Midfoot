@@ -255,7 +255,6 @@ const $ = <T extends Element>(sel: string): T => {
 }
 
 const svg = $<SVGSVGElement>('#fig')
-const readout = $<HTMLDivElement>('#readout')
 const panesHost = $<HTMLDivElement>('#panes')
 const compareBtn = $<HTMLButtonElement>('#compareBtn')
 const notesPanel = $<HTMLElement>('#notes')
@@ -593,7 +592,6 @@ function draw(now: number): void {
       ghost: null,
       trail: [],
       color: i === 0 ? COLORS.bodyA : COLORS.bodyB,
-      label: '',
       faded: false,
     })
   }
@@ -606,26 +604,9 @@ function draw(now: number): void {
     showIpfLine: true,
   }
   renderScene(svg, scene)
-  updateReadout(bodies)
 
   const animating = tweens.some((t) => Object.values(t).some((tw: Tween) => tw.animating))
   if (animating || play) requestFrame()
-}
-
-function updateReadout(bodies: readonly SceneBody[]): void {
-  readout.replaceChildren(
-    ...bodies.map((b) => {
-      const item = el('div', 'item')
-
-      const cap = el('span', 'cap', '上体角度')
-      const val = el('span', 'val', String(Math.round(b.pose.torsoDeg)))
-      val.style.color = b.color
-      val.append(el('span', 'deg', '°'))
-
-      item.append(cap, val)
-      return item
-    }),
-  )
 }
 
 // ---------------------------------------------------------------------------

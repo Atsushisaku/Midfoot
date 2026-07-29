@@ -62,40 +62,7 @@ body {
   display: block;
 }
 
-/* 数値表示は上体角度ひとつだけ（§6） */
-.readout {
-  position: absolute;
-  right: 24px;
-  bottom: 14px;
-  display: flex;
-  gap: 26px;
-  align-items: flex-end;
-  pointer-events: none;
-}
-
-.readout .item {
-  text-align: right;
-  line-height: 1;
-}
-
-.readout .cap {
-  font-size: 13px;
-  color: var(--muted);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.readout .val {
-  font-size: 46px;
-  font-weight: 300;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.readout .val .deg {
-  font-size: 24px;
-  margin-left: 1px;
-}
+/* 上体角度の数値は render.ts が SVG 内（各パネルの右下）に描く（Rev.10） */
 
 /* --- コントロール -------------------------------------------------------- */
 
@@ -326,7 +293,7 @@ body {
 }
 
 .depth-row .slider {
-  flex: 0 1 400px;
+  flex: 0 1 580px;
   min-width: 220px;
 }
 
@@ -428,9 +395,6 @@ body {
 }
 
 @media (max-height: 620px) {
-  .readout .val {
-    font-size: 36px;
-  }
   .controls {
     padding: 8px 14px 10px;
   }

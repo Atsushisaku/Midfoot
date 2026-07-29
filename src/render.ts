@@ -23,9 +23,10 @@ const FLOOR_Y = 556
 const CAMERAS = {
   single: [{ s: 410, midX: 500 }],
   overlay: [{ s: 410, midX: 500 }],
+  // 2体の間隔は広めに（midX 272/728 だと中央で近すぎた。指導者の指摘、Rev.10）
   side: [
-    { s: 345, midX: 272 },
-    { s: 345, midX: 728 },
+    { s: 345, midX: 245 },
+    { s: 345, midX: 755 },
   ],
 } as const
 
@@ -162,7 +163,6 @@ export interface SceneBody {
   /** バーの軌跡（§8.2）。モデル座標 */
   readonly trail: readonly Vec[]
   readonly color: string
-  readonly label: string
   /** 固定した体は薄く描く（§8.5） */
   readonly faded: boolean
 }
@@ -513,6 +513,31 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
     })
 
     if (!faded) drawWarnings(out, cam, body.pose)
+
+    // 上体角度（§6：数値表示はこれだけ）。各パネルの右下に、その体の色で描く
+    const vx = ((i + 1) * VIEW_W) / panels - 40
+    const vy = FLOOR_Y - 12
+    out.push(
+      text({ x: vx, y: vy - 44 }, '上体角度', {
+        fill: '#6b7480',
+        'font-size': 13,
+        'text-anchor': 'end',
+      }),
+    )
+    const val = el('text', {
+      x: vx,
+      y: vy,
+      fill: body.color,
+      'font-size': 46,
+      'font-weight': 300,
+      'text-anchor': 'end',
+    })
+    val.textContent = String(Math.round(body.pose.torsoDeg))
+    const deg = document.createElementNS(NS, 'tspan')
+    deg.textContent = '°'
+    deg.setAttribute('font-size', '24')
+    val.append(deg)
+    out.push(val)
   })
 
   svg.replaceChildren(...out)
