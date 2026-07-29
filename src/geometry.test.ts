@@ -67,8 +67,8 @@ describe('heelTiltDeg (§4.4)', () => {
     expect(heelTiltDeg('flat', 0.2)).toBe(0)
   })
 
-  it('標準足長でランニング 6.03°、リフティング 7.51°', () => {
-    expect(heelTiltDeg('running', 0.2)).toBeCloseTo(6.03, 2)
+  it('標準足長でスニーカー 3.01°、リフティング 7.51°', () => {
+    expect(heelTiltDeg('running', 0.2)).toBeCloseTo(3.01, 2)
     expect(heelTiltDeg('lifting', 0.2)).toBeCloseTo(7.51, 2)
   })
 

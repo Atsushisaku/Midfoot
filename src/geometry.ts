@@ -86,10 +86,15 @@ function resolveBar(spec: BarSpec): BarParams {
 /** 靴（§4.4） */
 export type Shoe = 'flat' | 'running' | 'lifting'
 
-/** ヒール高 h。総長基準の絶対値であって足長比ではない（§4.4 の注記） */
+/**
+ * ヒール高 h。総長基準の絶対値であって足長比ではない（§4.4 の注記）。
+ * h は「かかとが前足部よりどれだけ高いか」＝ドロップに相当する。
+ * スニーカーの一般的なドロップは 8〜12mm なので 10mm 相当とする
+ * （Rev.10 まで 20mm にしていたが過大だった。1mm ≈ 0.000735）。
+ */
 export const SHOE_HEEL: Record<Shoe, number> = {
   flat: 0,
-  running: 0.0147,
+  running: 0.00735,
   lifting: 0.0183,
 }
 

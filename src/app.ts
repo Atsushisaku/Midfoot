@@ -7,7 +7,6 @@ import {
   BAR_PARAMS,
   SHOE_HEEL,
   solvePose,
-  solveStanding,
   type BarPosition,
   type BarParams,
   type Body,
@@ -468,8 +467,9 @@ function draw(now: number): void {
 
   bodies.push({
     pose: livePose,
-    // 比較中はゴーストと軌跡を出すと線が増えすぎるので単体表示のときだけ
-    ghost: comparing ? null : solveStanding(liveInput),
+    // 立位ゴーストは Rev.10 で廃止（§4.9）。灰色の第2の身体が「比較中」と誤読されるため。
+    // バーの軌跡は比較中だけ省く（線が増えすぎる）
+    ghost: null,
     trail: comparing ? [] : buildTrail(liveInput),
     color: COLORS.bodyA,
     label: comparing ? '操作中の体' : '',

@@ -162,20 +162,12 @@ body {
   font-weight: 600;
 }
 
-/* シューズは名前＋かかと高さの2段表示（Rev.10）。フラットは下段なし */
-.seg.shoe button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  line-height: 1.15;
-}
-
+/* シューズは名前の右にかかと高さ（ドロップ）を小さく併記。フラットは併記なし */
 .seg.shoe button small {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 400;
   color: var(--muted);
+  margin-left: 3px;
 }
 
 .seg.shoe button[aria-pressed='true'] small {
@@ -291,9 +283,10 @@ button.ghostbtn {
 
 /* --- 身体の特徴（簡易／詳細）------------------------------------------------ */
 
+/* 最上段に置くので、区切り線は下側に引く */
 .body-section {
-  border-top: 1px dashed var(--border);
-  padding-top: 8px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;

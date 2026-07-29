@@ -14,20 +14,6 @@
       </section>
 
       <section class="controls">
-        <!-- 道具・動作：その場で変えられるもの -->
-        <div class="row row-buttons">
-          <div class="seg" id="bar" role="group" aria-label="担ぎ位置">
-            <button data-v="high">ハイバー</button>
-            <button data-v="low">ローバー</button>
-          </div>
-          <div class="seg shoe" id="shoe" role="group" aria-label="シューズ">
-            <button data-v="flat">フラット</button>
-            <button data-v="running">スニーカー<small>&#8593;20mm</small></button>
-            <button data-v="lifting">リフティング<small>&#8593;25mm</small></button>
-          </div>
-          <div class="row sliders" id="mainSliders"></div>
-        </div>
-
         <!-- 身体の特徴：努力では変えられない・変えにくいもの -->
         <div class="body-section">
           <div class="row row-buttons">
@@ -46,6 +32,21 @@
           </div>
           <div class="row sliders" id="bodySliders" hidden></div>
         </div>
+
+        <!-- 道具・動作：その場で変えられるもの -->
+        <div class="row row-buttons">
+          <div class="seg" id="bar" role="group" aria-label="担ぎ位置">
+            <button data-v="high">ハイバー</button>
+            <button data-v="low">ローバー</button>
+          </div>
+          <div class="seg shoe" id="shoe" role="group" aria-label="シューズ">
+            <button data-v="flat">フラット</button>
+            <button data-v="running">スニーカー<small>(10mm)</small></button>
+            <button data-v="lifting">リフティング<small>(25mm)</small></button>
+          </div>
+        </div>
+
+        <div class="row sliders" id="mainSliders"></div>
 
         <div class="row row-buttons">
           <button class="wide" id="freeze">体格を固定</button>
