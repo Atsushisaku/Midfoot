@@ -77,8 +77,6 @@ interface State {
   body: Body
   bar: BarPosition
   shoe: Shoe
-  /** 足首の可動域の使用率 0〜1（§4.5） */
-  shankUsage: number
   p: number
   presetId: string | null
   /** 固定した体格（§8.5）。null なら単体表示 */
@@ -90,7 +88,6 @@ const state: State = {
   body: { ...DEFAULT_PRESET.body },
   bar: 'high',
   shoe: 'flat',
-  shankUsage: 1,
   p: 1,
   presetId: DEFAULT_PRESET.id,
   frozen: null,
@@ -147,7 +144,6 @@ function writeUrl(): void {
   const q = new URLSearchParams()
   q.set('b', state.bar)
   q.set('s', state.shoe)
-  q.set('u', String(Math.round(state.shankUsage * 100)))
   q.set('d', String(Math.round(state.p * 100)))
   q.set('m', encodeBody(state.body))
   if (state.frozen) {
@@ -171,8 +167,7 @@ function readUrl(): void {
   const shoe = q.get('s')
   if (shoe === 'flat' || shoe === 'running' || shoe === 'lifting') state.shoe = shoe
 
-  const u = Number(q.get('u'))
-  if (Number.isFinite(u)) state.shankUsage = clampRange(u / 100, RANGES.shankUsage)
+  // Rev.9 まで存在した「膝の前送り」の u= パラメータは無視する（古い共有リンク互換）
 
   const d = Number(q.get('d'))
   if (Number.isFinite(d)) state.p = Math.min(1, Math.max(0, d / 100))
@@ -195,9 +190,6 @@ function readUrl(): void {
   tw.shoeH.set(SHOE_HEEL[state.shoe], 0, 0)
   pushBody(0, 0)
 }
-
-const clampRange = (v: number, r: { min: number; max: number }) =>
-  Math.min(r.max, Math.max(r.min, v))
 
 // ---------------------------------------------------------------------------
 // DOM
@@ -228,8 +220,6 @@ interface SliderSpec {
  * 常時表示は「深さ」と「足首の硬さ」の2本だけ（§6）。
  * 足首の硬さを常時側に置くのは、上体角度に対する支配力が全入力中で最大（約46°）で、
  * かつ靴ボタンとセットで説明する対象だから。
- * 「膝の前送り」は使い方の選択であって体格ではないが、既定 100% で普段は触らないので
- * 体格側の折りたたみに入れる。
  */
 const MAIN_SLIDERS = new Set(['depth', 'rom'])
 
@@ -282,15 +272,6 @@ const SLIDERS: readonly SliderSpec[] = [
       state.body = { ...state.body, mShank: v }
     },
   },
-  {
-    key: 'usage',
-    label: '膝の前送り',
-    range: RANGES.shankUsage,
-    get: () => state.shankUsage,
-    set: (v) => {
-      state.shankUsage = v
-    },
-  },
 ]
 
 const inputs = new Map<string, HTMLInputElement>()
@@ -313,7 +294,7 @@ function buildSliders(): void {
     input.addEventListener('input', () => {
       spec.set(Number(input.value))
       // 体格そのものを手で動かしたときだけプリセット選択を外す。
-      // 深さと膝の前送りは「使い方」であって体格ではないので、選択を維持する
+      // 深さは「使い方」であって体格ではないので、選択を維持する
       if (BODY_SLIDERS.has(spec.key)) state.presetId = null
       pushBody(0)
       syncButtons()
@@ -413,7 +394,9 @@ function draw(now: number): void {
   const shared = {
     bar: currentBar(now),
     shoe: { h: tw.shoeH.read(now) },
-    shankUsage: state.shankUsage,
+    // 足首の可動域は常に使い切る（Rev.9）。図は「その体格・その担ぎ位置での最小前傾」を示す。
+    // θ_s = usage × (ROM + φ) なので、θ_s を減らした動きは足首の硬さスライダーで同一に再現できる
+    shankUsage: 1,
     p: state.p,
   }
 
