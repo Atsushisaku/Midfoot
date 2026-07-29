@@ -13,15 +13,12 @@ import {
   type Pose,
   type PoseInput,
   type Shoe,
-  type Vec,
 } from './geometry'
 import { ANKLE_LEVELS, DEFAULT_PRESET, PRESETS, RANGES } from './presets'
 import { COLORS, renderScene, type Layout, type Scene, type SceneBody } from './render'
 
 /** 補間アニメーションの長さ（§8.1） */
 const DUR = 300
-/** バーの軌跡のサンプル数（§8.2） */
-const TRAIL_N = 9
 
 // ---------------------------------------------------------------------------
 // 補間
@@ -417,15 +414,6 @@ function currentBar(now: number): BarParams {
   }
 }
 
-function buildTrail(input: PoseInput): Vec[] {
-  const out: Vec[] = []
-  for (let i = 0; i < TRAIL_N; i++) {
-    const p = (input.p * i) / (TRAIL_N - 1)
-    out.push(solvePose({ ...input, p }).bar)
-  }
-  return out
-}
-
 function draw(now: number): void {
   frameHandle = 0
 
@@ -467,10 +455,10 @@ function draw(now: number): void {
 
   bodies.push({
     pose: livePose,
-    // 立位ゴーストは Rev.10 で廃止（§4.9）。灰色の第2の身体が「比較中」と誤読されるため。
-    // バーの軌跡は比較中だけ省く（線が増えすぎる）
+    // 立位ゴーストとバーの軌跡は Rev.10 で廃止（§4.9 / §8.2）。
+    // どちらも本体以外の描き込みが「もう1人いる」等の誤読を生むため
     ghost: null,
-    trail: comparing ? [] : buildTrail(liveInput),
+    trail: [],
     color: COLORS.bodyA,
     label: comparing ? '操作中の体' : '',
     faded: false,
