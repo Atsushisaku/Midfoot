@@ -5,6 +5,10 @@
 import { it } from 'vitest'
 import { solvePose, type PoseInput } from './geometry'
 import { PRESETS } from './presets'
+import { strings } from './i18n'
+
+/** 表示名は i18n に移したので、レポートでは日本語ラベルを引く（Rev.11） */
+const name = (id: string) => strings('ja').presets[id] ?? id
 
 const f = (n: number) => n.toFixed(1).padStart(6)
 
@@ -24,7 +28,7 @@ it('report', () => {
   for (const pr of PRESETS) {
     for (const bar of ['high', 'low'] as const) {
       const row = ps.map((p) => f(solvePose(base({ body: pr.body, bar, p })).torsoDeg)).join('')
-      console.log(`${(pr.label + '/' + bar).padEnd(18)}${row}`)
+      console.log(`${(name(pr.id) + '/' + bar).padEnd(18)}${row}`)
     }
   }
 
@@ -33,7 +37,7 @@ it('report', () => {
   for (const pr of PRESETS) {
     const hi = solvePose(base({ body: pr.body, bar: 'high' })).torsoDeg
     const lo = solvePose(base({ body: pr.body, bar: 'low' })).torsoDeg
-    console.log(`${pr.label.padEnd(14)}${f(hi)}${f(lo)}${f(lo - hi)}`)
+    console.log(`${name(pr.id).padEnd(14)}${f(hi)}${f(lo)}${f(lo - hi)}`)
   }
 
   console.log('\n=== 靴の効果（使用率 100%、ローバー）===')
@@ -58,6 +62,6 @@ it('report', () => {
 
   console.log('\n=== 立位ゴースト ===')
   for (const pr of PRESETS) {
-    console.log(`${pr.label.padEnd(14)}${f(solvePose(base({ body: pr.body, p: 0 })).torsoDeg)}`)
+    console.log(`${name(pr.id).padEnd(14)}${f(solvePose(base({ body: pr.body, p: 0 })).torsoDeg)}`)
   }
 })

@@ -160,10 +160,36 @@ body {
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.08);
 }
 
-.cornerbtn.right {
-  left: auto;
+/* 右上は言語トグルと注記を横に並べる */
+.corner.right {
+  position: absolute;
+  top: 14px;
   right: 16px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.corner .cornerbtn {
+  position: static;
   color: var(--muted);
+}
+
+.seg.lang {
+  background: var(--panel);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.08);
+}
+
+.seg.lang button {
+  font-size: 13px;
+  padding: 9px 12px;
+  color: var(--muted);
+}
+
+.seg.lang button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
 }
 
 .cornerbtn[data-on='true'] {

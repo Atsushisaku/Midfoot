@@ -7,6 +7,8 @@
  */
 
 import { DEG, K_PIVOT, type Pose, type Vec } from './geometry'
+// このファイルは上体角ラジアンを t という局所変数で使うので、別名で受ける
+import { t as tr } from './i18n'
 
 const NS = 'http://www.w3.org/2000/svg'
 
@@ -400,7 +402,7 @@ function drawWarnings(out: SVGElement[], cam: Cam, pose: Pose): void {
   // 「背屈が足りない」状態は、脛前傾角を可動域の比率で持つようになったので
   // 独立した警告としては存在しない。可動域が足りなければ股関節が後ろに残り、
   // 「つま先が浮く」として図に出る。
-  if (pose.lift === 'toe') label(P(pose.toe), 'つま先が浮く', 16, 20)
+  if (pose.lift === 'toe') label(P(pose.toe), tr().toeLift, 16, 20)
 
   if (pose.torsoWarn) {
     // 上体の中点に置くと、θ_t が 90° に近いとき上体が水平になってラベルが図と重なる。
@@ -410,7 +412,7 @@ function drawWarnings(out: SVGElement[], cam: Cam, pose: Pose): void {
       x: pose.shoulder.x + Math.sin(t) * HEAD_OFFSET,
       y: pose.shoulder.y + Math.cos(t) * HEAD_OFFSET,
     })
-    label({ x: head.x, y: head.y - HEAD_R * cam.s }, '現実的でない前傾', 14, -14)
+    label({ x: head.x, y: head.y - HEAD_R * cam.s }, tr().torsoWarn, 14, -14)
   }
 }
 
@@ -518,7 +520,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
     const vx = ((i + 1) * VIEW_W) / panels - 40
     const vy = FLOOR_Y - 12
     out.push(
-      text({ x: vx, y: vy - 44 }, '上体角度', {
+      text({ x: vx, y: vy - 44 }, tr().torsoAngle, {
         fill: '#6b7480',
         'font-size': 13,
         'text-anchor': 'end',

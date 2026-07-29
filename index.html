@@ -10,8 +10,14 @@
     <div id="app">
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
-        <button class="cornerbtn" id="compareBtn" aria-pressed="false">比較</button>
-        <button class="cornerbtn right" id="notesBtn" aria-expanded="false">注記</button>
+        <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
+        <div class="corner right">
+          <div class="seg lang" id="lang" role="group">
+            <button data-v="ja">JA</button>
+            <button data-v="en">EN</button>
+          </div>
+          <button class="cornerbtn" id="notesBtn" aria-expanded="false"></button>
+        </div>
       </section>
 
       <section class="controls">
@@ -21,17 +27,10 @@
         <div class="row sliders depth-row" id="depthRow"></div>
       </section>
 
+      <!-- 注記の中身は i18n.ts の notesList から app.ts が入れる（§9） -->
       <aside id="notes" hidden>
-        <button id="notesClose" aria-label="閉じる">×</button>
-        <ul>
-          <li>バーではなく、身体＋バーの合成重心が中足部の上にあるのが正確な条件。高重量ではバー位置で近似できる。</li>
-          <li>上体は1本の棒として扱っている（実際は腰椎・胸椎で角度が分散する）。</li>
-          <li>スタンス幅を広げたり股関節を外旋させると、矢状面では大腿骨が短くなったのと同じ効果が出る。この図では表現していないが、実際の解決策としては有効。</li>
-          <li>靴のヒールは最適な傾き量を変えるのではなく、その脛角度に<strong>届くかどうか</strong>を変える。</li>
-          <li>ローバーは前傾を<strong>減らすのではなく増やす</strong>。買っているのは「脛を立てたままバランスが取れること」で、対価が前傾と股関節・背部の負担。大腿が長い人ほどこの増分は大きい。</li>
-          <li>身長そのものは上体角度に影響しない。効くのは<strong>セグメントの比率だけ</strong>で、比率が同じなら大柄でも小柄でも答えは変わらない。</li>
-          <li>傾きの大きさは体格による最適解であり、フォームの優劣ではない。</li>
-        </ul>
+        <button id="notesClose">×</button>
+        <ul id="notesList"></ul>
       </aside>
     </div>
     <script type="module" src="/src/app.ts"></script>

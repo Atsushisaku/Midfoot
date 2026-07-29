@@ -1,8 +1,8 @@
 import type { Body } from './geometry'
 
+/** 表示名は i18n.ts が id をキーに持つ（Rev.11。日英で切り替えるため） */
 export interface Preset {
   readonly id: string
-  readonly label: string
   readonly body: Body
 }
 
@@ -23,46 +23,21 @@ export const FOOT = 0.2
  * 1タップで体格パラメータすべてを設定する。
  */
 export const PRESETS: readonly Preset[] = [
-  {
-    id: 'standard',
-    label: '標準',
-    body: { mShank: 1.0, mFemur: 1.0, mTorso: 1.0, foot: FOOT, romDeg: 30 },
-  },
-  {
-    id: 'long-femur',
-    label: '大腿が長い',
-    body: { mShank: 1.0, mFemur: 1.18, mTorso: 0.92, foot: FOOT, romDeg: 30 },
-  },
-  {
-    id: 'long-torso',
-    label: '上体が長い',
-    body: { mShank: 0.96, mFemur: 0.94, mTorso: 1.18, foot: FOOT, romDeg: 30 },
-  },
-  {
-    id: 'long-shank',
-    label: 'すねが長い',
-    body: { mShank: 1.18, mFemur: 0.95, mTorso: 0.95, foot: FOOT, romDeg: 30 },
-  },
+  { id: 'standard', body: { mShank: 1.0, mFemur: 1.0, mTorso: 1.0, foot: FOOT, romDeg: 30 } },
+  { id: 'long-femur', body: { mShank: 1.0, mFemur: 1.18, mTorso: 0.92, foot: FOOT, romDeg: 30 } },
+  { id: 'long-torso', body: { mShank: 0.96, mFemur: 0.94, mTorso: 1.18, foot: FOOT, romDeg: 30 } },
+  { id: 'long-shank', body: { mShank: 1.18, mFemur: 0.95, mTorso: 0.95, foot: FOOT, romDeg: 30 } },
 ]
 
 export const DEFAULT_PRESET = PRESETS[0]!
 
 /**
- * 簡易設定の「足首の硬さ」3段階（Rev.10）。
+ * 簡易設定の「足首の硬さ」3段階（Rev.10）。表示名は i18n.ts が deg をキーに持つ。
  * ふつう = 30° は既定値と一致させ、初期表示の見た目を変えない。
  * 硬め 15° は仕様 §8.4 の「硬い」例示、柔らかめ 35° はスライダー上限
  * （バーベルスクワットで実際に使う範囲の上限。§13-2）。
  */
-export interface AnkleLevel {
-  readonly deg: number
-  readonly label: string
-}
-
-export const ANKLE_LEVELS: readonly AnkleLevel[] = [
-  { deg: 15, label: '硬め' },
-  { deg: 30, label: 'ふつう' },
-  { deg: 35, label: '柔らかめ' },
-]
+export const ANKLE_LEVELS: readonly number[] = [15, 30, 35]
 
 /** スライダーの範囲（仕様 §13-2。動かしながら調整する暫定値） */
 export const RANGES = {

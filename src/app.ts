@@ -16,6 +16,7 @@ import {
 } from './geometry'
 import { ANKLE_LEVELS, DEFAULT_PRESET, PRESETS, RANGES } from './presets'
 import { COLORS, renderScene, type Scene, type SceneBody } from './render'
+import { asLang, getLang, setLang, t, type Lang } from './i18n'
 
 /** 補間アニメーションの長さ（§8.1） */
 const DUR = 300
@@ -197,6 +198,8 @@ function writeUrl(): void {
     q.set('b2', b.bar)
     q.set('s2', b.shoe)
   }
+  // 既定（日本語）のときは付けない。英語のリンクだけ ?lang=en で共有できる
+  if (getLang() !== 'ja') q.set('lang', getLang())
   try {
     history.replaceState(null, '', `${location.pathname}?${q}`)
   } catch {
@@ -207,6 +210,10 @@ function writeUrl(): void {
 function readUrl(): void {
   const q = new URLSearchParams(location.search)
   if (![...q.keys()].length) return
+
+  // 自動判定はしない（§10.1）。指定が無ければ日本語のまま
+  const lang = asLang(q.get('lang'))
+  if (lang) setLang(lang)
 
   const [a, b] = state.panes
 
@@ -219,8 +226,10 @@ function readUrl(): void {
   // Rev.9 まで存在した「膝の前送り」の u= パラメータは無視する（古い共有リンク互換）
   // Rev.10 まで存在した比較レイアウトの l= パラメータも同様に無視する
 
+  // has() で確かめてから読む。Number(null) は 0 なので、d の無いリンク
+  // （?lang=en だけを手で共有した場合など）で深さが立位に落ちてしまう
   const d = Number(q.get('d'))
-  if (Number.isFinite(d)) state.p = Math.min(1, Math.max(0, d / 100))
+  if (q.has('d') && Number.isFinite(d)) state.p = Math.min(1, Math.max(0, d / 100))
 
   const m = q.get('m')
   const bodyA = m ? decodeBody(m) : null
@@ -256,9 +265,13 @@ const $ = <T extends Element>(sel: string): T => {
 
 const svg = $<SVGSVGElement>('#fig')
 const panesHost = $<HTMLDivElement>('#panes')
+const depthRow = $<HTMLDivElement>('#depthRow')
 const compareBtn = $<HTMLButtonElement>('#compareBtn')
 const notesPanel = $<HTMLElement>('#notes')
 const notesBtn = $<HTMLButtonElement>('#notesBtn')
+const notesList = $<HTMLUListElement>('#notesList')
+const notesClose = $<HTMLButtonElement>('#notesClose')
+const langSeg = $<HTMLDivElement>('#lang')
 
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -273,17 +286,16 @@ const el = <K extends keyof HTMLElementTagNameMap>(
 
 interface PaneSliderSpec {
   key: 'femur' | 'torso' | 'shank' | 'rom'
-  label: string
   range: { min: number; max: number; step: number }
   get: (b: Body) => number
   set: (b: Body, v: number) => Body
 }
 
 const PANE_SLIDERS: readonly PaneSliderSpec[] = [
-  { key: 'femur', label: '大腿', range: RANGES.segment, get: (b) => b.mFemur, set: (b, v) => ({ ...b, mFemur: v }) },
-  { key: 'torso', label: '上体', range: RANGES.segment, get: (b) => b.mTorso, set: (b, v) => ({ ...b, mTorso: v }) },
-  { key: 'shank', label: 'すね', range: RANGES.segment, get: (b) => b.mShank, set: (b, v) => ({ ...b, mShank: v }) },
-  { key: 'rom', label: '足首の硬さ', range: RANGES.rom, get: (b) => b.romDeg, set: (b, v) => ({ ...b, romDeg: v }) },
+  { key: 'femur', range: RANGES.segment, get: (b) => b.mFemur, set: (b, v) => ({ ...b, mFemur: v }) },
+  { key: 'torso', range: RANGES.segment, get: (b) => b.mTorso, set: (b, v) => ({ ...b, mTorso: v }) },
+  { key: 'shank', range: RANGES.segment, get: (b) => b.mShank, set: (b, v) => ({ ...b, mShank: v }) },
+  { key: 'rom', range: RANGES.rom, get: (b) => b.romDeg, set: (b, v) => ({ ...b, romDeg: v }) },
 ]
 
 /** セグメント比のスライダー。動かすとプリセット選択が外れる（足首は別軸なので外さない） */
@@ -351,17 +363,17 @@ function buildPane(i: 0 | 1): PaneUI {
   const root = el('div', i === 0 ? 'pane' : 'pane pane-b')
 
   // --- 身体の特徴（簡易｜詳細） ---
-  const modeSeg = buildSeg('mode', '設定モード', [
-    { v: 'simple', label: '簡易' },
-    { v: 'detail', label: '詳細' },
+  const modeSeg = buildSeg('mode', t().aria.settingMode, [
+    { v: 'simple', label: t().simple },
+    { v: 'detail', label: t().detail },
   ], (v) => {
     if (v !== 'simple' && v !== 'detail') return
     s.bodyMode = v
     sync()
   })
 
-  const presetSeg = buildSeg('presets', '体型プリセット',
-    PRESETS.map((p) => ({ v: p.id, label: p.label })),
+  const presetSeg = buildSeg('presets', t().aria.bodyPreset,
+    PRESETS.map((p) => ({ v: p.id, label: t().presets[p.id] ?? p.id })),
     (v) => {
       const preset = PRESETS.find((p) => p.id === v)
       if (!preset) return
@@ -374,8 +386,8 @@ function buildPane(i: 0 | 1): PaneUI {
       scheduleUrl()
     })
 
-  const ankleSeg = buildSeg('presets', '足首の硬さ',
-    ANKLE_LEVELS.map((l) => ({ v: String(l.deg), label: l.label })),
+  const ankleSeg = buildSeg('presets', t().aria.ankle,
+    ANKLE_LEVELS.map((deg) => ({ v: String(deg), label: t().ankleLevels[deg] ?? String(deg) })),
     (v) => {
       s.body = { ...s.body, romDeg: Number(v) }
       pushBody(i, DUR)
@@ -385,19 +397,19 @@ function buildPane(i: 0 | 1): PaneUI {
     })
 
   const labeled = el('div', 'labeled-seg')
-  labeled.append(el('span', 'seg-label', '足首'), ankleSeg)
+  labeled.append(el('span', 'seg-label', t().ankle), ankleSeg)
 
   const simpleRow = el('div', 'row row-buttons grow')
   simpleRow.append(presetSeg, labeled)
 
   const head = el('div', 'row row-buttons')
-  head.append(el('span', 'section-label', '身体の特徴'), modeSeg, simpleRow)
+  head.append(el('span', 'section-label', t().bodySection), modeSeg, simpleRow)
 
   const slidersRow = el('div', 'row sliders')
   slidersRow.hidden = true
   const inputs = new Map<string, HTMLInputElement>()
   for (const spec of PANE_SLIDERS) {
-    const input = buildSlider(slidersRow, spec.label, spec.range, spec.get(s.body), (v) => {
+    const input = buildSlider(slidersRow, t()[spec.key], spec.range, spec.get(s.body), (v) => {
       s.body = spec.set(s.body, v)
       // セグメント比を手で動かしたときだけプリセット選択を外す。足首は独立した軸なので維持する
       if (SEGMENT_SLIDERS.has(spec.key)) s.presetId = null
@@ -413,9 +425,9 @@ function buildPane(i: 0 | 1): PaneUI {
   bodySection.append(head, slidersRow)
 
   // --- 道具：担ぎ位置・シューズ ---
-  const barSeg = buildSeg('', '担ぎ位置', [
-    { v: 'high', label: 'ハイバー' },
-    { v: 'low', label: 'ローバー' },
+  const barSeg = buildSeg('', t().aria.barPosition, [
+    { v: 'high', label: t().highBar },
+    { v: 'low', label: t().lowBar },
   ], (v) => {
     const bar = asBar(v)
     if (!bar) return
@@ -426,10 +438,10 @@ function buildPane(i: 0 | 1): PaneUI {
     scheduleUrl()
   })
 
-  const shoeSeg = buildSeg('shoe', 'シューズ', [
-    { v: 'flat', label: 'フラット' },
-    { v: 'running', label: 'スニーカー', sub: '(10mm)' },
-    { v: 'lifting', label: 'リフティング', sub: '(25mm)' },
+  const shoeSeg = buildSeg('shoe', t().aria.shoes, [
+    { v: 'flat', label: t().flat },
+    { v: 'running', label: t().sneaker, sub: '(10mm)' },
+    { v: 'lifting', label: t().lifting, sub: '(25mm)' },
   ], (v) => {
     const shoe = asShoe(v)
     if (!shoe) return
@@ -500,12 +512,17 @@ function stepPlay(now: number): void {
   depthInput.value = String(state.p)
 }
 
+function syncPlayBtn(): void {
+  const on = play !== null
+  playBtn.textContent = on ? t().stop : t().play
+  playBtn.dataset['on'] = String(on)
+  playBtn.setAttribute('aria-pressed', String(on))
+}
+
 function setPlaying(on: boolean): void {
   // 現在の深さから連続的に動き出す（立位寄りなら下降から、ボトム寄りなら上昇から）
   play = on ? makeSeg(state.p < 0.5 ? 'down' : 'up', state.p, performance.now()) : null
-  playBtn.textContent = on ? '■ 停止' : '▶ 再生'
-  playBtn.dataset['on'] = String(on)
-  playBtn.setAttribute('aria-pressed', String(on))
+  syncPlayBtn()
   if (!on) scheduleUrl()
   requestFrame()
 }
@@ -538,6 +555,36 @@ function sync(): void {
   compareBtn.setAttribute('aria-pressed', String(state.comparing))
   compareBtn.dataset['on'] = String(state.comparing)
   depthInput.value = String(state.p)
+  press(langSeg, getLang())
+}
+
+/**
+ * 言語切替（§10.1）。文言は生成時に埋め込まれるので、ペインと深さ行は作り直す。
+ * 状態（state）は DOM と独立なので、作り直しても選択内容は保たれる。
+ */
+function applyLang(): void {
+  const s = t()
+  document.documentElement.lang = getLang()
+  document.title = s.title
+  compareBtn.textContent = s.compare
+  notesBtn.textContent = s.notes
+  notesClose.setAttribute('aria-label', s.close)
+  langSeg.setAttribute('aria-label', s.aria.lang)
+
+  notesList.replaceChildren(
+    ...s.notesList.map((html) => {
+      const li = document.createElement('li')
+      // <strong> を効かせるため。文言は自前の定数で、外部入力は混ざらない
+      li.innerHTML = html
+      return li
+    }),
+  )
+
+  panesHost.replaceChildren()
+  depthRow.replaceChildren()
+  panes = [buildPane(0), buildPane(1)]
+  buildDepthRow()
+  sync()
 }
 
 // ---------------------------------------------------------------------------
@@ -623,20 +670,30 @@ function scheduleUrl(): void {
 // 起動
 // ---------------------------------------------------------------------------
 
-function init(): void {
-  readUrl()
-  panes = [buildPane(0), buildPane(1)]
-
-  const depthRow = $<HTMLDivElement>('#depthRow')
-  playBtn = el('button', 'playbtn', '▶ 再生')
-  playBtn.setAttribute('aria-pressed', 'false')
+function buildDepthRow(): void {
+  playBtn = el('button', 'playbtn')
   playBtn.addEventListener('click', () => setPlaying(!play))
   depthRow.append(playBtn)
+  syncPlayBtn()
 
-  depthInput = buildSlider(depthRow, '深さ', RANGES.depth, state.p, (v) => {
+  depthInput = buildSlider(depthRow, t().depth, RANGES.depth, state.p, (v) => {
     // 手でドラッグしたら自動再生は止める
     if (play) setPlaying(false)
     state.p = v
+    requestFrame()
+    scheduleUrl()
+  })
+}
+
+function init(): void {
+  readUrl()
+  applyLang()
+
+  langSeg.addEventListener('click', (ev) => {
+    const v = asLang((ev.target as HTMLElement).closest('button')?.dataset['v'] ?? null)
+    if (!v || v === getLang()) return
+    setLang(v as Lang)
+    applyLang()
     requestFrame()
     scheduleUrl()
   })
@@ -661,9 +718,8 @@ function init(): void {
     notesBtn.setAttribute('aria-expanded', String(show))
   }
   notesBtn.addEventListener('click', () => toggleNotes(notesPanel.hidden))
-  $('#notesClose').addEventListener('click', () => toggleNotes(false))
+  notesClose.addEventListener('click', () => toggleNotes(false))
 
-  sync()
   requestFrame()
 }
 
