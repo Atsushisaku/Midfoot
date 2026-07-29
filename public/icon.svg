@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Squat posture visualizer">
+  <rect width="1024" height="1024" rx="225.3" fill="#3b9de8"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="514.8" y1="84.6" x2="514.8" y2="911.4" stroke="rgba(255,255,255,0.55)" stroke-width="15.9"/>
+    <path d="M468.1 874.0L617.4 615.4L328.3 627.0L549.6 303.5" stroke="#ffffff" stroke-width="41.1"/>
+    <line x1="421.4" y1="890.8" x2="608.1" y2="890.8" stroke="#ffffff" stroke-width="41.1"/>
+    <circle cx="602.3" cy="226.5" r="93.3" stroke="#ffffff" stroke-width="41.1"/>
+
+    <circle cx="514.8" cy="336.2" r="39.2" fill="#3b9de8" stroke="#ffffff" stroke-width="26.1"/>
+  </g>
+</svg>
