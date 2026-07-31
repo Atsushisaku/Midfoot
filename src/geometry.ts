@@ -16,8 +16,15 @@ export const DEG = Math.PI / 180
 /** セグメント長の基準値。倍率 1.0 のときこの比になる（§4.8） */
 export const BASE_SEGMENTS = { shank: 0.32, femur: 0.31, torso: 0.37 } as const
 
-/** 足関節の位置（L_foot 比、§4.1） */
-const ANKLE_X_RATIO = 0.25
+/**
+ * 足関節の位置（L_foot 比、§4.1）。
+ *
+ * x は 0.20。足首関節はかかと後端から足長の約 20%（26cm の足で約 5cm）にあるという
+ * 解剖学的事実に合わせた値。Rev.12 まで 0.25 にしていたが、デッドリフト版を作る際に
+ * かかとが長すぎることが分かったので、両種目でこちらに揃えた（2026-08-01）。
+ * 足関節が後ろに寄ると中足部までの距離が伸びるので、上体はわずかに深く前傾する。
+ */
+const ANKLE_X_RATIO = 0.2
 const ANKLE_Y_RATIO = 0.2
 /** 中足部の位置（L_foot 比、§4.1） */
 const MID_X_RATIO = 0.5

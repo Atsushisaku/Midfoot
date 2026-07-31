@@ -91,12 +91,12 @@ describe('heelTiltDeg (§4.4)', () => {
 // ---------------------------------------------------------------------------
 
 describe('検算値（仕様 §4.3 の注記）', () => {
-  it('標準体型・θ_s=30°・最深でハイバー 34.4°', () => {
-    expect(solvePose(input({ bar: 'high' })).torsoDeg).toBeCloseTo(34.4, 1)
+  it('標準体型・θ_s=30°・最深でハイバー 36.2°', () => {
+    expect(solvePose(input({ bar: 'high' })).torsoDeg).toBeCloseTo(36.2, 1)
   })
 
-  it('標準体型・θ_s=30°・最深でローバー 43.4°', () => {
-    expect(solvePose(input({ bar: 'low' })).torsoDeg).toBeCloseTo(43.4, 1)
+  it('標準体型・θ_s=30°・最深でローバー 45.7°', () => {
+    expect(solvePose(input({ bar: 'low' })).torsoDeg).toBeCloseTo(45.7, 1)
   })
 
   it('ローバーはハイバーより必ず前傾が深い', () => {
@@ -280,8 +280,8 @@ describe('深さ（§4.7）', () => {
 // ---------------------------------------------------------------------------
 
 describe('立位ゴースト（§4.9）', () => {
-  it('標準体型で 9° 前後の軽い前傾になる', () => {
-    expect(solveStanding(input()).torsoDeg).toBeCloseTo(9, 0)
+  it('標準体型で 11° 前後の軽い前傾になる', () => {
+    expect(solveStanding(input()).torsoDeg).toBeCloseTo(11, 0)
   })
 
   it('立位でもバーは中足部の真上にある', () => {
