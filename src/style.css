@@ -171,6 +171,13 @@ body {
   align-items: center;
 }
 
+/* 種目の行き来は上部中央。左右の隅（比較・注記／言語）とぶつからない位置 */
+.corner.center {
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+
 .cornerbtn {
   appearance: none;
   font: inherit;

@@ -21,10 +21,12 @@
         <div class="corner left">
           <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
           <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
-          <!-- スクワット版への戻り。`./` ではなく `index.html` にしてあるのは、
-               単一HTMLを2つ並べて file:// で開く運用（ダブルクリック起動）でも辿れるようにするため。
-               Pages（/Midfoot/deadlift.html）でも dev サーバでも同じように解決できる。
-               文言は app.ts が入れる -->
+        </div>
+        <!-- 種目の行き来。`./` ではなく `index.html` にしてあるのは、
+             単一HTMLを2つ並べて file:// で開く運用（ダブルクリック起動）でも辿れるようにするため。
+             Pages（/Midfoot/deadlift.html）でも dev サーバでも同じように解決できる。
+             文言は app.ts が入れる -->
+        <div class="corner center">
           <a class="cornerbtn ghost link" id="exLink" href="index.html"></a>
         </div>
         <!-- 言語切替（Rev.8）。markup はスクワット版 index.html と同じ -->

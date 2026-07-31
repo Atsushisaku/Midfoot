@@ -13,7 +13,8 @@
 | **スクワット** | **https://atsushisaku.github.io/Midfoot/** |
 | **デッドリフト** | **https://atsushisaku.github.io/Midfoot/deadlift.html** |
 
-画面の左上のリンクで種目を行き来できる（言語もそのまま引き継ぐ）。
+画面上部中央のボタン（「スクワット」／「デッドリフト」）で種目を行き来できる。
+言語（日本語／English）もそのまま引き継ぐ。
 
 ## 使う（スクワット）
 
