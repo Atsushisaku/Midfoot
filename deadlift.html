@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <!-- アイコンはスクワット版と共通のものを流用する（プロトタイプ用の別アイコンは作らない） -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iU3F1YXQgcG9zdHVyZSB2aXN1YWxpemVyIj4KICA8cmVjdCB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiByeD0iMjI1LjMiIGZpbGw9IiMzYjlkZTgiLz4KICA8ZyBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogICAgPGxpbmUgeDE9IjUxNC44IiB5MT0iODQuNiIgeDI9IjUxNC44IiB5Mj0iOTExLjQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjU1KSIgc3Ryb2tlLXdpZHRoPSIxNS45Ii8+CiAgICA8cGF0aCBkPSJNNDY4LjEgODc0LjBMNjE3LjQgNjE1LjRMMzI4LjMgNjI3LjBMNTQ5LjYgMzAzLjUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0MS4xIi8+CiAgICA8bGluZSB4MT0iNDIxLjQiIHkxPSI4OTAuOCIgeDI9IjYwOC4xIiB5Mj0iODkwLjgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0MS4xIi8+CiAgICA8Y2lyY2xlIGN4PSI2MDIuMyIgY3k9IjIyNi41IiByPSI5My4zIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNDEuMSIvPgoKICAgIDxjaXJjbGUgY3g9IjUxNC44IiBjeT0iMzM2LjIiIHI9IjM5LjIiIGZpbGw9IiMzYjlkZTgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyNi4xIi8+CiAgPC9nPgo8L3N2Zz4K" />
+    <meta name="theme-color" content="#3b9de8" />
+    <title>Midfoot デッドリフト（プロトタイプ）</title>
+    <!-- プロトタイプなので公開せず、アクセス計測（GoatCounter）も入れない（仕様 §0） -->
+  </head>
+  <body>
+    <div id="app">
+      <section class="stage">
+        <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="corner left">
+          <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
+          <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
+        </div>
+        <!-- 言語切替（Rev.8）。markup はスクワット版 index.html と同じ -->
+        <div class="corner right">
+          <div class="seg lang" id="lang" role="group">
+            <button data-v="ja">JA</button>
+            <button data-v="en">EN</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls">
+        <!--
+          挙上は両ペイン共有。図のすぐ下に置く：モバイルでは設定ペインが縦に
+          伸びるため、下端に置くと画面外へ出て「動かしながら図を見る」ができなくなる
+        -->
+        <div class="row sliders depth-row" id="liftRow"></div>
+        <!-- 設定ペイン。単体=1ペイン、比較=2ペイン。中身は app.ts が生成する -->
+        <div class="panes" id="panes"></div>
+      </section>
+
+      <!-- 注記の中身は strings.ts の notesList から app.ts が入れる -->
+      <aside id="notes" hidden>
+        <button id="notesClose">×</button>
+        <ul id="notesList"></ul>
+      </aside>
+    </div>
+    <script type="module" src="/src/deadlift/app.ts"></script>
+  </body>
+</html>
