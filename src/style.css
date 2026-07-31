@@ -190,6 +190,13 @@ body {
   color: var(--muted);
 }
 
+/* 種目の行き来（スクワット ⇄ デッドリフト） */
+.cornerbtn.link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .seg.lang {
   background: var(--panel);
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.08);

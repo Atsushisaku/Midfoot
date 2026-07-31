@@ -13,6 +13,8 @@ export interface Strings {
   readonly compare: string
   readonly notes: string
   readonly close: string
+  /** デッドリフト版への行き来リンク（Rev.9） */
+  readonly exLink: string
   /** 設定ペイン */
   readonly bodySection: string
   readonly toolSection: string
@@ -59,6 +61,7 @@ const ja: Strings = {
   compare: '比較',
   notes: '注記',
   close: '閉じる',
+  exLink: 'デッドリフト版 →',
   bodySection: '身体的特徴',
   toolSection: '担ぎ方・シューズ',
   simple: '簡易',
@@ -110,6 +113,7 @@ const en: Strings = {
   compare: 'Compare',
   notes: 'Notes',
   close: 'Close',
+  exLink: 'Deadlift →',
   bodySection: 'Body',
   toolSection: 'Bar & shoes',
   simple: 'Simple',

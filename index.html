@@ -23,6 +23,10 @@
         <div class="corner left">
           <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
           <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
+          <!-- デッドリフト版への行き来。相対リンクにするのは Pages のサブパス
+               （/Midfoot/）でも dev サーバでも、単一HTMLを2つ並べたオフライン運用でも
+               同じように辿れるようにするため。文言は app.ts が入れる -->
+          <a class="cornerbtn ghost link" id="exLink" href="deadlift.html"></a>
         </div>
         <div class="corner right">
           <div class="seg lang" id="lang" role="group">

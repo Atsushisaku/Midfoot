@@ -169,6 +169,7 @@ const notesBtn = $<HTMLButtonElement>('#notesBtn')
 const notesList = $<HTMLUListElement>('#notesList')
 const notesClose = $<HTMLButtonElement>('#notesClose')
 const langSeg = $<HTMLDivElement>('#lang')
+const exLink = $<HTMLAnchorElement>('#exLink')
 
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -505,6 +506,12 @@ function applyLang(): void {
   notesBtn.textContent = s.notes
   notesClose.setAttribute('aria-label', s.close)
   langSeg.setAttribute('aria-label', s.aria.lang)
+  exLink.textContent = s.exLink
+  // 種目を移動しても言語を保つ（スクワット版は ?lang= を読む。既定の ja は付けない）。
+  // href は file:// でも動くよう index.html にしてあるが、それ以外では './' に寄せて
+  // 計測のパスが「/」と「/index.html」に割れないようにする
+  const base = location.protocol === 'file:' ? 'index.html' : './'
+  exLink.href = getLang() === 'ja' ? base : `${base}?lang=${getLang()}`
 
   notesList.replaceChildren(
     ...s.notesList.map((html) => {
@@ -599,6 +606,10 @@ function buildLiftRow(): void {
 }
 
 function init(): void {
+  // URL 共有は持たないが、種目間リンクが付ける ?lang= だけは読む（スクワット版と同じ規約）
+  const lang = asLang(new URLSearchParams(location.search).get('lang'))
+  if (lang) setLang(lang)
+
   // 文言に依存する DOM の生成はすべて applyLang に集約する（切替時に同じ経路を通る）
   applyLang()
 

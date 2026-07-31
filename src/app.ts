@@ -272,6 +272,7 @@ const notesBtn = $<HTMLButtonElement>('#notesBtn')
 const notesList = $<HTMLUListElement>('#notesList')
 const notesClose = $<HTMLButtonElement>('#notesClose')
 const langSeg = $<HTMLDivElement>('#lang')
+const exLink = $<HTMLAnchorElement>('#exLink')
 
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -578,6 +579,9 @@ function applyLang(): void {
   notesBtn.textContent = s.notes
   notesClose.setAttribute('aria-label', s.close)
   langSeg.setAttribute('aria-label', s.aria.lang)
+  exLink.textContent = s.exLink
+  // 種目を移動しても言語を保つ（デッドリフト版も ?lang= を読む。既定の ja は付けない）
+  exLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
 
   notesList.replaceChildren(
     ...s.notesList.map((html) => {

@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "スクワット姿勢可視化アプリ - 上体の傾きが体格と担ぎ位置の関数であることを示す",
+  "description": "姿勢可視化アプリ（スクワット／デッドリフト）- 姿勢が体格の関数であることを示す",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --config vite.deadlift.config.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

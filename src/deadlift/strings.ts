@@ -15,6 +15,8 @@ export interface DlStrings {
   readonly compare: string
   readonly notes: string
   readonly close: string
+  /** スクワット版への行き来リンク（Rev.9） */
+  readonly exLink: string
   /** 設定ペインの見出し */
   readonly bodySection: string
   readonly setupSection: string
@@ -56,10 +58,11 @@ export interface DlStrings {
 }
 
 const ja: DlStrings = {
-  title: 'Midfoot デッドリフト（プロトタイプ）',
+  title: 'Midfoot デッドリフト',
   compare: '比較',
   notes: '注記',
   close: '閉じる',
+  exLink: '← スクワット版',
   bodySection: '身体的特徴',
   setupSection: 'セッティング',
   simple: '簡易',
@@ -102,10 +105,11 @@ const ja: DlStrings = {
 }
 
 const en: DlStrings = {
-  title: 'Midfoot Deadlift (prototype)',
+  title: 'Midfoot Deadlift',
   compare: 'Compare',
   notes: 'Notes',
   close: 'Close',
+  exLink: '← Squat',
   bodySection: 'Body',
   setupSection: 'Setup',
   simple: 'Simple',

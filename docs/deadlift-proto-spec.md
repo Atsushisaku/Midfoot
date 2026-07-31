@@ -6,9 +6,9 @@
 
 ## 0. スコープと制約
 
-- **プロトタイプ。GitHub Pages に公開しない。** エントリはルートの `deadlift.html`
-  （dev サーバ専用。`vite.config.ts` に `rollupOptions.input` が無いため `vite build` の対象外
-  ＝ `dist/` に入らない）。**`vite.config.ts` / `package.json` / 既存 `src/*.ts` は変更禁止**。
+- 当初は「プロトタイプ。GitHub Pages に公開しない」方針で、`vite build` の対象外の
+  dev 専用エントリとして作った。**Rev.9 で公開に切り替えた**（下の Rev.9 参照）。
+  それまでは `vite.config.ts` / `package.json` / 既存 `src/*.ts` を変更禁止としていた。
 - 新規コードはすべて `src/deadlift/` 配下 ＋ `deadlift.html`。
 - `npm test` は `src/**/*.test.ts` を全部拾い、CI の Pages デプロイのゲートである。
   **DL のテストが落ちるとスクワット版の公開が止まる**ので常に緑を保つ。
@@ -432,6 +432,29 @@ t 駆動の決め打ちで、バーが脛上部〜膝を通過する時間帯（
 切替は `applyLang()` がペインと挙上行を作り直す方式（スクワット版と同じ）で、
 `state` と `tweens` はモジュールスコープのまま残るので**姿勢・比較・挙上位置・
 再生状態がすべて保持される**（実機で検証済み）。
+
+## Rev.9（2026-07-31）— 公開とスクワット版との連携
+
+ユーザー判断で**公開に切り替えた**。URL 構成は「相互リンク方式」:
+
+| URL | 内容 |
+|---|---|
+| `/` | スクワット版（**現状維持**。既存のブックマークと共有 URL を壊さない） |
+| `/deadlift.html` | デッドリフト版 |
+
+- **ハブページは作らない**。`/` をハブにするとスクワット版の共有 URL（`?b=&s=&d=…`）が
+  全部壊れるため。行き来は**両画面の左上のリンク**（`.corner left` の 3 つ目）で行う。
+- **ビルド**: `vite-plugin-singlefile` が `inlineDynamicImports` を強制し、Rollup が
+  複数エントリと併用できないので、**2 回ビルド**する
+  （`vite.deadlift.config.ts` は `emptyOutDir: false` ＋ `input: 'deadlift.html'`）。
+  `npm run build` = `tsc --noEmit && vite build && vite build --config vite.deadlift.config.ts`。
+- 「プロトタイプ」表記を外し、**GoatCounter の計測をデッドリフト版にも追加**。
+- **言語を引き継ぐ**: リンクは英語表示中だけ `?lang=en` を付け、DL 側は起動時に
+  `?lang=` だけを読む（URL 共有そのものは持たない）。
+- 戻りリンクの href は `file://`（単一 HTML を 2 つ並べる運用）では `index.html`、
+  それ以外では `./`（計測のパスが `/` と `/index.html` に割れるのを避ける）。
+- スクワット版への変更は**追加のみ**（`.cornerbtn.link` の CSS、リンク 1 本、
+  `exLink` の文言 1 キー、`applyLang` の 2 行）。既存の挙動・文言・セレクタは不変。
 
 ## 9. 検証（全フェーズ後）
 

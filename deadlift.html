@@ -4,11 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light" />
-    <!-- アイコンはスクワット版と共通のものを流用する（プロトタイプ用の別アイコンは作らない） -->
+    <!-- アイコンはスクワット版と共通のものを流用する（種目別のアイコンは作らない） -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iU3F1YXQgcG9zdHVyZSB2aXN1YWxpemVyIj4KICA8cmVjdCB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiByeD0iMjI1LjMiIGZpbGw9IiMzYjlkZTgiLz4KICA8ZyBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogICAgPGxpbmUgeDE9IjUxNC44IiB5MT0iODQuNiIgeDI9IjUxNC44IiB5Mj0iOTExLjQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjU1KSIgc3Ryb2tlLXdpZHRoPSIxNS45Ii8+CiAgICA8cGF0aCBkPSJNNDY4LjEgODc0LjBMNjE3LjQgNjE1LjRMMzI4LjMgNjI3LjBMNTQ5LjYgMzAzLjUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0MS4xIi8+CiAgICA8bGluZSB4MT0iNDIxLjQiIHkxPSI4OTAuOCIgeDI9IjYwOC4xIiB5Mj0iODkwLjgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0MS4xIi8+CiAgICA8Y2lyY2xlIGN4PSI2MDIuMyIgY3k9IjIyNi41IiByPSI5My4zIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNDEuMSIvPgoKICAgIDxjaXJjbGUgY3g9IjUxNC44IiBjeT0iMzM2LjIiIHI9IjM5LjIiIGZpbGw9IiMzYjlkZTgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyNi4xIi8+CiAgPC9nPgo8L3N2Zz4K" />
     <meta name="theme-color" content="#3b9de8" />
-    <title>Midfoot デッドリフト（プロトタイプ）</title>
-    <!-- プロトタイプなので公開せず、アクセス計測（GoatCounter）も入れない（仕様 §0） -->
+    <title>Midfoot デッドリフト</title>
+    <!-- アクセス計測。Cookie も IP も保存しない（GoatCounter）。
+         async なので取得に失敗してもアプリの描画には影響しない＝オフラインでも動く。
+         file:// で開いたときにも解決できるよう、プロトコル相対ではなく https を明示する -->
+    <script data-goatcounter="https://atsushisaku.goatcounter.com/count"
+            async src="https://gc.zgo.at/count.js"></script>
   </head>
   <body>
     <div id="app">
@@ -17,6 +21,11 @@
         <div class="corner left">
           <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
           <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
+          <!-- スクワット版への戻り。`./` ではなく `index.html` にしてあるのは、
+               単一HTMLを2つ並べて file:// で開く運用（ダブルクリック起動）でも辿れるようにするため。
+               Pages（/Midfoot/deadlift.html）でも dev サーバでも同じように解決できる。
+               文言は app.ts が入れる -->
+          <a class="cornerbtn ghost link" id="exLink" href="index.html"></a>
         </div>
         <!-- 言語切替（Rev.8）。markup はスクワット版 index.html と同じ -->
         <div class="corner right">
