@@ -65,10 +65,34 @@ const KNEE_RETREAT_END = 0.75
 export const KNEE_AHEAD_TOP = 0.02
 
 /**
+ * ロックアウトで規定する大腿角 φ（度、Rev.10）。負＝股関節が膝より前に出る。
+ * 膝の前方量 KNEE_AHEAD_TOP と合わせて骨盤をバーの下へ送り込む（hips through）。
+ */
+export const PHI_TOP_DEG = -2
+
+/**
+ * ロックアウトで規定する上体角（度、Rev.10）。負＝肩が股関節より後ろ。
+ * 完全なロックアウトは体幹が鉛直をわずかに越えて後傾し、肩峰が大転子の後ろに来る。
+ * −4° は標準体格で肩が股関節の約 3.4cm 後方（体幹長 0.37 × sin4°）。
+ */
+export const TORSO_TOP_DEG = -4
+
+/**
+ * 規定のロックアウト姿勢へ寄せ始める挙上進行度（Rev.10）。
+ * ここから t=1 まで smoothstep で角度を寄せる。両端で微分が 0 なので、
+ * 重心解からの離脱もロックアウトへの着地も滑らかになる。
+ */
+export const LOCK_BLEND_START = 0.8
+
+/**
  * ロックアウトでの身体重心 x の目標（Rev.5-2）。
  * 立位の自然な身体重心は足首とミッドフットの間（≈0.06〜0.07）にあるので、
  * 挙上に合わせて目標をそこへ動かす。これがないと腰がバーの後方に取り残される。
  * この結果、入力の `comPos` は「開始時（t=0）の重心位置」という意味になる。
+ *
+ * Rev.10 以降、t=1 の姿勢そのものは重心拘束ではなく PHI_TOP_DEG / TORSO_TOP_DEG で
+ * 規定する（理由は同節を参照）。この値は t<1 の目標としてだけ効く。規定姿勢が実際に
+ * 持つ重心は 0.056〜0.062（体格による）で、ここと整合していることをテストで固定してある。
  */
 export const COM_TOP = 0.06
 
@@ -123,6 +147,9 @@ export const COM_RATIO = {
  * 4 件だけ拾い、その全部がグリッチ（トップ直前で背角が 104° に飛ぶ）だったので
  * 0° 開始に戻した（2026-07-31 検証）。
  * 2° 刻みで根を括ってから二分法 50 回（区間幅 2°/2^50 ＝ 倍精度の下限まで詰まる）。
+ *
+ * Rev.10: ロックアウトの hips through（φ<0）は走査ではなく規定値 PHI_TOP_DEG への
+ * 寄せで作るので、ここは 0° 開始のままでよい。
  */
 const PHI_MIN_DEG = 0
 const PHI_MAX_DEG = 140
@@ -222,7 +249,10 @@ export interface DlPose {
   readonly midX: number
 
   // 角度（度）
-  /** 鉛直からの上体前傾。スクワット版 torsoDeg と同じ向きの規約 */
+  /**
+   * 鉛直からの上体前傾。スクワット版 torsoDeg と同じ向きの規約。
+   * ロックアウトでは負（＝肩が股関節より後ろ）になる（Rev.10）。
+   */
   readonly torsoDeg: number
   /** 水平からの背角 = 90 − torsoDeg。表示・report 用 */
   readonly backHorizDeg: number
@@ -230,7 +260,10 @@ export interface DlPose {
   readonly shinDeg: number
   /** 腕（バー→肩）の鉛直からの傾き。肩がバーより前なら正。Rev.3 では完全に出力 */
   readonly armDeg: number
-  /** 達成した身体重心の x（床マーカー描画用）。warn が none なら目標 comT と一致する */
+  /**
+   * 達成した身体重心の x（床マーカー描画用）。warn が none で、かつロックアウトへの
+   * 寄せが効いていない（t ≤ LOCK_BLEND_START）なら目標 comT と一致する。
+   */
   readonly comX: number
 
   /** プレート円盤の半径。セッティングの生値で固定（挙上中は円盤ごと床から浮く） */
@@ -330,14 +363,37 @@ export function solveDlPose(input: DlPoseInput): DlPose {
    */
   const comT = lerp(clamp(input.comPos ?? COM_POS_DEFAULT, 0, 1) * midX, COM_TOP, t)
 
-  // --- バー（§3-3 / Rev.3）---
-  // ロックアウト高は直立チェーン（脛・大腿・体幹が一直線）から腕長を引いた高さ。
-  // Rev.2 のような反復は要らない（腕の傾きが入力でなくなったため）。
+  // --- ロックアウトの規定姿勢（Rev.10）---
+  // トップの姿勢だけは重心拘束で解かず、角度で直接規定する。理由は Rev.10 に書いたとおり、
+  // ロックアウト近傍では「股 →(体幹)→ 肩 →(腕)→ バー」がほぼ折り畳まれた特異配置になり、
+  // 重心残差が φ に対して平坦かつ二重根になって、根から姿勢が決まらないため。
+  // ここで組んだ姿勢が満たすバー高をロックアウト高として採り、t→1 でここへ寄せる。
+  const kneeAheadTop = Math.min(KNEE_AHEAD_TOP, midX - BAR_CLEARANCE - ankle.x, shankEff)
+  const kneeTopY = ankle.y + Math.sqrt(Math.max(0, shankEff ** 2 - kneeAheadTop ** 2))
+  const hipTop: Vec = {
+    x: ankle.x + kneeAheadTop - femurEff * Math.sin(PHI_TOP_DEG * DEG),
+    y: kneeTopY + femurEff * Math.cos(PHI_TOP_DEG * DEG),
+  }
+  const shoulderTop: Vec = {
+    x: hipTop.x + torso * Math.sin(TORSO_TOP_DEG * DEG),
+    y: hipTop.y + torso * Math.cos(TORSO_TOP_DEG * DEG),
+  }
+
+  // --- バー（§3-3 / Rev.3 / Rev.10）---
+  // ロックアウト高は「規定姿勢の肩から腕長だけ下、ただしバー x は中足部」で決まる。
+  // Rev.6 まではここが直立チェーン − 腕長（＝理論上の最大高）だったが、それだと
+  // 肩・股・バーが厳密に一直線になり、上体を傾ける余地がゼロになっていた。
   const barY0 = resolveBarY(input.bar)
-  const barYLock = ankle.y + shankEff + femurEff + torso - armLen
+  const armSpanTop = armLen ** 2 - (shoulderTop.x - midX) ** 2
+  const barYLock =
+    armSpanTop > 0
+      ? shoulderTop.y - Math.sqrt(armSpanTop)
+      : ankle.y + shankEff + femurEff + torso - armLen
   const barY = lerp(barY0, barYLock, t)
-  // バー x は常に中足部（このアプリの拘束その1）
-  const bar: Vec = { x: midX, y: barY }
+  // バー x は常に中足部（このアプリの拘束その1）。
+  // これは重心解を組み立てる間のバー位置。ロックアウトへの寄せ（Rev.10）が入ると
+  // バー高は肩から導出し直すので、最終的な出力は下の `bar` になる。
+  const barSched: Vec = { x: midX, y: barY }
 
   // --- 膝（§3-5）。腰の高さの自由度はここで閉じる（Rev.1 から変更なし） ---
   const hipHeight = clamp(input.hipHeight, 0, 1)
@@ -377,7 +433,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     SEGMENT_MASS.shank * (knee.x + COM_RATIO.shank * (ankle.x - knee.x)) +
     SEGMENT_MASS.femur * (hip.x + COM_RATIO.femur * (knee.x - hip.x)) +
     SEGMENT_MASS.torso * (hip.x + COM_RATIO.torso * (shoulder.x - hip.x)) +
-    SEGMENT_MASS.arm * (shoulder.x + COM_RATIO.arm * (bar.x - shoulder.x))
+    SEGMENT_MASS.arm * (shoulder.x + COM_RATIO.arm * (midX - shoulder.x))
 
   /**
    * φ から姿勢を組む。クロージャは φ ループの外で 1 回だけ作る（毎フレーム 2 体分
@@ -390,8 +446,8 @@ export function solveDlPose(input: DlPoseInput): DlPose {
       x: knee.x - femurEff * Math.sin(r),
       y: knee.y + femurEff * Math.cos(r),
     }
-    const dx = bar.x - hip.x
-    const dy = bar.y - hip.y
+    const dx = barSched.x - hip.x
+    const dy = barSched.y - hip.y
     const d = Math.hypot(dx, dy)
     // 股からバーまでが体幹＋腕で届かない／近すぎて交わらないときは物理枝でない。
     if (d <= 0 || d > torso + armLen || d < Math.abs(torso - armLen)) return null
@@ -484,7 +540,33 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     solution = { phiDeg: 0, hip, shoulder, comX: comXOf(hip, shoulder) }
   }
 
-  const { hip, shoulder } = solution
+  // --- ロックアウトへの寄せ（Rev.10）---
+  // 重心解の (φ, 体幹角) を規定値へ smoothstep で寄せる。角度で混ぜるので体節長は常に厳密。
+  const w = smoothstep(LOCK_BLEND_START, 1, t)
+  let { hip, shoulder } = solution
+  let bar = barSched
+  if (w > 0) {
+    const phi = lerp(solution.phiDeg, PHI_TOP_DEG, w)
+    const th = lerp(Math.atan2(shoulder.x - hip.x, shoulder.y - hip.y) / DEG, TORSO_TOP_DEG, w)
+    hip = {
+      x: knee.x - femurEff * Math.sin(phi * DEG),
+      y: knee.y + femurEff * Math.cos(phi * DEG),
+    }
+    shoulder = {
+      x: hip.x + torso * Math.sin(th * DEG),
+      y: hip.y + torso * Math.cos(th * DEG),
+    }
+    // 角度を混ぜると肩は腕の円から外れるので、バー高のほうを肩に合わせ直す
+    // （バーは手にぶら下がっている＝バー高は肩から腕長ぶん下、が本来の因果）。
+    // w=0 では解が既に円上にあるので導出値はスケジュール値と一致し、接続は連続。
+    const span = armLen ** 2 - (shoulder.x - midX) ** 2
+    if (span > 0) bar = { x: midX, y: shoulder.y - Math.sqrt(span) }
+    // 寄せが効いている間は姿勢を重心目標に合わせていないので、「目標に届かなかった」
+    // という意味の reach 表示は成り立たない。実測では reach が立つのは t<0.2 だけなので、
+    // ここで落としても表示が途中で消えるようなことは起きない。
+    warn = 'none'
+  }
+  const comX = w > 0 ? comXOf(hip, shoulder) : solution.comX
 
   // --- 角度（§3-7 / Rev.3）---
   const torsoDeg = Math.atan2(shoulder.x - hip.x, shoulder.y - hip.y) / DEG
@@ -509,7 +591,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     backHorizDeg: 90 - torsoDeg,
     shinDeg,
     armDeg,
-    comX: solution.comX,
+    comX,
     plateR: barY0,
     warn,
   }

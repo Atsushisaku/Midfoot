@@ -9,7 +9,9 @@ import {
   COM_RATIO,
   COM_TOP,
   KNEE_AHEAD_TOP,
+  LOCK_BLEND_START,
   SEGMENT_MASS,
+  TORSO_TOP_DEG,
   normalizeDl,
   solveDlPose,
   type BarSetting,
@@ -44,6 +46,16 @@ const legXAtBarHeight = (p: DlPose): number => {
   if (p.bar.y <= p.ankle.y) return p.ankle.x
   return p.ankle.x + ((p.bar.y - p.ankle.y) / (p.knee.y - p.ankle.y)) * (p.knee.x - p.ankle.x)
 }
+
+/**
+ * バー高の「沈み」の許容（Rev.10）。
+ *
+ * ロックアウトへの寄せが効く区間では、バー高は肩から腕長ぶん下ろして導出する
+ * （バーは手にぶら下がっている、が本来の因果）。上体が後傾するぶん腕が前へ届く
+ * 必要が出るので、腕の鉛直成分がわずかに縮み、トップの直前でバーが 0.01cm ほど沈む。
+ * 実測の最大は 0.0088cm（全グリッド）。0.1cm 相当をここでの上限とする。
+ */
+const BAR_SETTLE = 0.1 / CM_PER_UNIT
 
 /**
  * Rev.3 検算表の許容は角度 ±0.3°・長さ ±0.5cm。
@@ -113,8 +125,9 @@ describe('検算値（Rev.5 の表）', () => {
     ['comPos=1（中足部）', { comPos: 1 }, 10.2, 74.6, 19.9, 26.2],
     // Rev.6 で差し替え（キャップで膝が Rev.5 のスケジュール値より後ろに来る）
     ['t=0.5', { t: 0.5 }, 41.5, 79.4, 7.2, 28.5],
-    ['t=1（ロックアウト）', { t: 1 }, 87.4, 88.6, -4.1, 6.9],
-    ['t=1 スモウ', { t: 1, stanceDeg: 35 }, 87.5, 80.5, -4.1, 6.8],
+    // Rev.10 で差し替え（ロックアウトを規定姿勢に切り替えた。背角 94° ＝ 肩が股の後ろ）
+    ['t=1（ロックアウト）', { t: 1 }, 94.0, 88.6, -6.5, 3.9],
+    ['t=1 スモウ', { t: 1, stanceDeg: 35 }, 94.0, 80.5, -6.7, 4.1],
   ]
 
   for (const [label, over, deg, cm, arm, barHip] of rows) {
@@ -223,11 +236,14 @@ describe('不変条件の総当たり（Rev.3 の現実グリッド）', () => {
    * comPos=1（中足部）は到達範囲の端なので、体格や t によっては 'reach' になる
    * （特に t=1 のロックアウトでは、身体だけの重心を中足部まで前に出せない）。
    * その場合は「一番近い端にクランプした」状態なので一致は求めない。
+   *
+   * Rev.10: t > LOCK_BLEND_START はロックアウトの規定姿勢へ寄せている区間なので、
+   * 姿勢はそもそも重心目標に合わせていない。ここは対象外（ずれの上限は別テストで固定）。
    */
   it('警告が出ていなければ身体重心が目標に載る', () => {
     let checked = 0
     for (const { c, p } of solved) {
-      if (p.warn !== 'none') continue
+      if (p.warn !== 'none' || c.t > LOCK_BLEND_START) continue
       // Rev.5-2: 目標は t とともに COM_TOP へ動く（comPos は開始時の値）
       const start = (c.comPos ?? COM_POS_DEFAULT) * p.midX
       const comT = start + (COM_TOP - start) * c.t
@@ -418,7 +434,7 @@ describe('挙上（§3-3 / §3-5）', () => {
       for (let t = 0; t <= 1.0001; t += 0.02) {
         const q = solveDlPose(input({ body: p.body, t }))
         const label = `${p.id}/t=${t.toFixed(2)}`
-        expect(q.bar.y, label).toBeGreaterThan(prevBar)
+        expect(q.bar.y, label).toBeGreaterThan(prevBar - BAR_SETTLE)
         expect(q.backHorizDeg, label).toBeGreaterThan(prevBack - 1.0)
         expect(Number.isFinite(q.torsoDeg), label).toBe(true)
         expect(Number.isFinite(q.hip.y), label).toBe(true)
@@ -456,7 +472,7 @@ describe('挙上（§3-3 / §3-5）', () => {
         for (let t = 0; t <= 1.0001; t += 0.02) {
           const q = solveDlPose(input({ body: p.body, comPos, t }))
           const label = `${p.id}/com=${comPos}/t=${t.toFixed(2)}`
-          expect(q.bar.y, label).toBeGreaterThan(prevBar)
+          expect(q.bar.y, label).toBeGreaterThan(prevBar - BAR_SETTLE)
           expect(Number.isFinite(q.torsoDeg), label).toBe(true)
           expect(Number.isFinite(q.hip.y), label).toBe(true)
           expect(Number.isFinite(q.armDeg), label).toBe(true)
@@ -472,11 +488,29 @@ describe('挙上（§3-3 / §3-5）', () => {
     }
   })
 
-  it('t=1（ロックアウト）で上体はほぼ直立（torsoDeg < 20°）', () => {
+  /**
+   * Rev.10 の眼目。ロックアウトは「鉛直をわずかに越えて後傾し、肩峰が大転子の後ろに来る」。
+   * 体格・スタンス・腕長・腰の構え・重心設定のどれを振っても t=1 は規定姿勢なので、
+   * 上体角はちょうど TORSO_TOP_DEG になる。
+   */
+  it('t=1（ロックアウト）で肩は股関節より後ろ', () => {
     for (const p of DL_PRESETS) {
       for (const stanceDeg of STANCES) {
-        const q = solveDlPose(input({ body: p.body, stanceDeg, t: 1 }))
-        expect(q.torsoDeg, `${p.id}/α=${stanceDeg}`).toBeLessThan(20)
+        for (const mArm of ARM_LEVELS) {
+          for (const hipHeight of [0, 0.5, 1]) {
+            for (const comPos of [0, 0.3, 1]) {
+              const q = solveDlPose(
+                input({ body: { ...p.body, mArm }, stanceDeg, hipHeight, comPos, t: 1 }),
+              )
+              const l = `${p.id}/α=${stanceDeg}/arm=${mArm}/hh=${hipHeight}/com=${comPos}`
+              expect(q.torsoDeg, l).toBeCloseTo(TORSO_TOP_DEG, 9)
+              expect(q.shoulder.x, l).toBeLessThan(q.hip.x)
+              // 後傾は「わずか」であって反り返りではない。3〜4cm に収まること
+              expect((q.hip.x - q.shoulder.x) * CM_PER_UNIT, l).toBeGreaterThan(2)
+              expect((q.hip.x - q.shoulder.x) * CM_PER_UNIT, l).toBeLessThan(5)
+            }
+          }
+        }
       }
     }
   })
@@ -493,11 +527,27 @@ describe('挙上（§3-3 / §3-5）', () => {
     }
   })
 
-  it('ロックアウト高は直立チェーンから腕長を引いた高さ（セッティングに依らない）', () => {
+  /**
+   * Rev.10 で定義が変わった。
+   *
+   * Rev.6 まではロックアウト高＝直立チェーン − 腕長（＝理論上の最大高）だったが、
+   * それだと股・肩・バーが厳密に一直線に並ぶ特異配置になり、上体を傾ける余地が
+   * ゼロになる。今は「規定のロックアウト姿勢の肩から腕長ぶん下」が定義。
+   *
+   * 旧式との差は 1cm 以内（標準体格で +0.2cm）。旧式は「肩がバーの真上にある」
+   * 前提の概算で、実際には腕が中足部まで前へ届くぶん鉛直成分が縮むので、
+   * どちら向きにもずれうる。ここでは大きさだけ押さえておく。
+   */
+  it('ロックアウト高は規定姿勢の肩から腕長ぶん下（セッティングに依らない）', () => {
     const ys = BARS.map((bar) => pose({ bar, t: 1 }).bar.y)
     for (const y of ys) expect(y).toBeCloseTo(ys[0]!, 12)
     const q = pose({ t: 1 })
-    expect(q.bar.y).toBeCloseTo(q.ankle.y + q.seg.shank + q.seg.femur + q.seg.torso - q.armLen, 12)
+    expect(Math.hypot(q.shoulder.x - q.bar.x, q.shoulder.y - q.bar.y)).toBeCloseTo(q.armLen, 12)
+    const straight = q.ankle.y + q.seg.shank + q.seg.femur + q.seg.torso - q.armLen
+    expect(Math.abs(q.bar.y - straight) * CM_PER_UNIT).toBeLessThan(1)
+    // ロックアウトのバーは大腿の途中（膝より上・股関節より下）に来る
+    expect(q.bar.y).toBeGreaterThan(q.knee.y)
+    expect(q.bar.y).toBeLessThan(q.hip.y)
   })
 })
 
@@ -591,13 +641,22 @@ describe('クランプと数値の健全性（§3-8 / Rev.3）', () => {
     expect(p.comX).toBeLessThan(p.midX)
   })
 
-  it('t=1 は comPos に依らず解ける（目標が COM_TOP に収束するため）', () => {
-    for (const comPos of [0, 0.3, 1]) {
-      for (const pr of DL_PRESETS) {
+  /**
+   * Rev.10: t=1 の姿勢は規定値なので comPos に一切依存しない（完全一致する）。
+   * そのうえで、規定姿勢が実際に持つ重心が t<1 の目標 COM_TOP の近傍にあること
+   * ＝「規定した姿勢が力学的にも成り立っている」ことを 0.5cm 以内で固定しておく。
+   * ここがずれると、寄せの区間で重心マーカーが床を横滑りする。
+   */
+  it('t=1 は comPos に依らず一意で、その重心は COM_TOP の近傍にある', () => {
+    for (const pr of DL_PRESETS) {
+      const ref = solveDlPose(input({ body: pr.body, comPos: 0.3, t: 1 }))
+      for (const comPos of [0, 0.3, 1]) {
         const p = solveDlPose(input({ body: pr.body, comPos, t: 1 }))
         expect(p.warn, `${pr.id}/com=${comPos}`).toBe('none')
-        expect(p.comX, `${pr.id}/com=${comPos}`).toBeCloseTo(COM_TOP, 9)
+        expect(p.hip.x, `${pr.id}/com=${comPos}`).toBeCloseTo(ref.hip.x, 12)
+        expect(p.shoulder.x, `${pr.id}/com=${comPos}`).toBeCloseTo(ref.shoulder.x, 12)
       }
+      expect(Math.abs(ref.comX - COM_TOP) * CM_PER_UNIT, pr.id).toBeLessThan(0.5)
     }
   })
 
