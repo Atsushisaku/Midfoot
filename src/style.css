@@ -350,15 +350,70 @@ body {
   --accent-soft: #ffefe8;
 }
 
-/* 深さは全ペイン共有なので、図の直下に1本だけ中央に置く（Rev.11）。
-   画面幅いっぱいだとドラッグ距離が長すぎるので幅を絞る */
-.depth-row {
+/* 注記パネルの基準。パネルはこの上へ absolute で出る */
+.controls {
+  position: relative;
+}
+
+/*
+ * 操作バー（Rev.14）。左にボタン群（比較・頻出エラー・注記）、中央に再生＋スライダー。
+ *
+ * grid の `1fr <固定> 1fr` にしているのは、**左にボタンを置いてもスライダーが
+ * 図の中心と揃ったまま**になるから。1 列目と 3 列目が同じ幅になるので、中央列は
+ * ボタンの有無・個数・言語（日本語／英語で幅が変わる）に関係なく常に中央に来る。
+ * flex で `justify-content: center` のままボタンを足すと、その幅ぶん中央がずれる。
+ *
+ * 中央列を `auto` にすると、スライダーの `flex: 0 1 580px` が縮められて
+ * 幅 220px まで潰れた（grid の auto は最小内容幅で足りると判断する）。
+ * 再生(80) ＋ gap(14) ＋ スライダー(580) ＋ 逃げ で 680px を明示する。
+ */
+.ctlbar {
+  display: grid;
+  grid-template-columns: 1fr 680px 1fr;
+  align-items: center;
+  column-gap: 12px;
   border-bottom: 1px dashed var(--border);
   padding-bottom: 8px;
+}
+
+.ctlbar-left {
+  grid-column: 1;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 図の上ではなくパネルの中に置くので、浮いて見せるための影は落とす */
+.ctlbar-left .cornerbtn {
+  box-shadow: none;
+}
+
+/* 深さ／挙上は全ペイン共有なので、図の直下に1本だけ中央に置く（Rev.11）。
+   画面幅いっぱいだとドラッグ距離が長すぎるので幅を絞る */
+.depth-row {
+  grid-column: 2;
   justify-content: center;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
+}
+
+/*
+ * 横に 3 列を並べきれない幅では、ボタン群とスライダーを縦に積む。
+ * 閾値 1250px は「左右の列（≥255px、日本語 3 ボタン）＋ 中央 680px ＋ gap」が
+ * 収まる下限。これを下回ると中央列が左へずれるか、スライダーが潰れる。
+ */
+@media (max-width: 1250px) {
+  .ctlbar {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+  }
+
+  .ctlbar-left,
+  .depth-row {
+    grid-column: 1;
+  }
 }
 
 .depth-row .slider {
@@ -437,17 +492,22 @@ body {
 
 /* 図の右上に出す。下に出すと操作パネルと上体角度の表示を覆ってしまう */
 /*
- * 注記パネル。**注記ボタンの真下**（左上）に出す。
- * 以前は右上（`inset: 16px 16px auto auto`）に出ていたが、これはボタンを左上の
- * 縦積みへ移す前のレイアウトの名残りで、ボタンと無関係な位置に開くうえ
- * 右上の言語切替を完全に覆っていた（2026-08-04 修正）。
+ * 注記パネル。**注記ボタンの真上**に開く（ボタンは操作バーの左端にある）。
  *
- * top の 116px は .corner の top(14) ＋ ボタン 2 段(42×2) ＋ gap(10) ＋ 逃げ(8)。
+ * 元は画面右上に固定されていて、ボタンと無関係な位置に開くうえ右上の言語切替を
+ * 完全に覆っていた。ボタンを図の左上隅から操作バーへ移した Rev.14 に合わせて、
+ * `.controls` を基準にした絶対配置でボタンの真上へ出す。
+ *
+ * 上へ伸びるので、画面が低いと figure の上へはみ出す。45vh で頭打ちにして
+ * 溢れたぶんはパネル内スクロールにする。
  */
 #notes {
-  position: fixed;
-  inset: 116px auto auto 16px;
+  position: absolute;
+  left: 16px;
+  bottom: calc(100% + 8px);
   max-width: min(460px, calc(100vw - 32px));
+  max-height: 45vh;
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -466,6 +526,20 @@ body {
   line-height: 1.65;
   color: #414b56;
   margin-bottom: 8px;
+}
+
+/*
+ * 狭い画面ではボタンの真上に開くと図の領域を突き抜けて、上部の言語切替まで覆ってしまう
+ * （実測 430x930 のスクワット版で 29px ぶん重なった）。ボタン基準をやめて、
+ * 上部のボタン列の**すぐ下**に固定するシート型に切り替える。
+ */
+@media (max-width: 900px) {
+  #notes {
+    position: fixed;
+    inset: calc(var(--corner-band) + 8px) 16px auto 16px;
+    max-width: none;
+    max-height: calc(100dvh - var(--corner-band) - 40px);
+  }
 }
 
 #notesClose {
@@ -503,28 +577,6 @@ body {
     border-top: 1px dashed var(--border);
     padding-top: 10px;
   }
-}
-
-/*
- * 入力セクションの右上に置くエラーページへのリンク（デッドリフト版のみ）。
- * 絶対配置にしたうえで、下の行にボタンぶんの余白を空けてスライダーと重ならないようにする。
- */
-.controls.has-errlink {
-  position: relative;
-}
-
-.errlink {
-  position: absolute;
-  top: 10px;
-  right: 16px;
-  z-index: 2;
-  font-size: 14px;
-  min-height: 38px;
-  padding: 7px 14px;
-}
-
-.has-errlink .depth-row {
-  padding-right: 140px;
 }
 
 /* --- エラー提示アプリ（deadlift-errors.html だけが使う）--------------------- */
