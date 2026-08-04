@@ -16,30 +16,39 @@
   </head>
   <body>
     <div id="app">
+      <!--
+        ヘッダー。サイト名・種目ナビ・言語切替。
+        現在地はナビのハイライト（aria-current）で示す。エラー例はデッドリフトの
+        下位ページなので、ナビはデッドリフトを選択状態にしたうえで crumb を足す。
+        文言と href は app.ts が入れる（言語を ?lang= で引き継ぐため）。
+      -->
+      <header class="topbar">
+        <span class="brand">Midfoot</span>
+        <nav class="seg nav" id="nav">
+          <a data-page="squat" href="index.html"></a>
+          <a data-page="deadlift" href="deadlift.html"></a>
+        </nav>
+        <span class="crumb" id="crumb" hidden></span>
+        <div class="seg lang" id="lang" role="group">
+          <button data-v="ja">JA</button>
+          <button data-v="en">EN</button>
+        </div>
+      </header>
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="corner left">
           <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
         </div>
+        <!-- 注記。上のボタンの真下に開く。位置は .stage 基準（ヘッダーの高さに依存しない） -->
+        <aside id="notes" hidden>
+          <button id="notesClose">×</button>
+          <ul id="notesList"></ul>
+        </aside>
         <!-- 操作ボタンは図の左下（スライダーの上の仕切り線より上）に左詰めで置く -->
         <div class="corner bottomleft">
           <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
           <!-- エラー例のページへ。文言と表示可否（日本語のときだけ）は app.ts が決める -->
           <a class="cornerbtn ghost link" id="errLink" href="deadlift-errors.html"></a>
-        </div>
-        <!-- 種目の行き来。`./` ではなく `index.html` にしてあるのは、
-             単一HTMLを2つ並べて file:// で開く運用（ダブルクリック起動）でも辿れるようにするため。
-             Pages（/Midfoot/deadlift.html）でも dev サーバでも同じように解決できる。
-             文言は app.ts が入れる -->
-        <div class="corner center">
-          <a class="cornerbtn ghost link" id="exLink" href="index.html"></a>
-        </div>
-        <!-- 言語切替（Rev.8）。markup はスクワット版 index.html と同じ -->
-        <div class="corner right">
-          <div class="seg lang" id="lang" role="group">
-            <button data-v="ja">JA</button>
-            <button data-v="en">EN</button>
-          </div>
         </div>
       </section>
 
@@ -56,11 +65,6 @@
         <div class="panes" id="panes"></div>
       </section>
 
-      <!-- 注記。図の左上のボタンから開く。ビューポート基準の固定配置 -->
-      <aside id="notes" hidden>
-        <button id="notesClose">×</button>
-        <ul id="notesList"></ul>
-      </aside>
     </div>
     <script type="module" src="/src/deadlift/app.ts"></script>
   </body>

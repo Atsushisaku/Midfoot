@@ -643,7 +643,8 @@ t=1 の足首・膝・股・肩・バーが模範と 0.05cm 以内で一致す�
 （旧 `error.html`）。
 
 - **導線**: デッドリフト版の**図の左下**に「比較」と並べて「エラー例」ボタンを置く。
-  戻りはエラーページ上部中央の「デッドリフトに戻る」
+  戻りはヘッダーの種目ナビから（Rev.15）。エラー例はデッドリフトの下位ページ扱いで、
+  ナビは「デッドリフト」を選択状態にしたまま `› エラー例` を足す
 - **ビルド**: `vite-plugin-singlefile` の 1 エントリ制約で **3 回目のビルド**になる
   （`vite.deadlift-errors.config.ts`、`emptyOutDir: false`）。
   `npm run build` = index.html → deadlift.html → deadlift-errors.html

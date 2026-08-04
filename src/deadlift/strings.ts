@@ -15,8 +15,9 @@ export interface DlStrings {
   readonly compare: string
   readonly notes: string
   readonly close: string
-  /** スクワット版への行き来リンク（Rev.9） */
-  readonly exLink: string
+  /** 種目ナビの文言（Rev.15）。現在地はハイライトで示すので、両方の名前が要る */
+  readonly navSquat: string
+  readonly navDeadlift: string
   /** エラー例のページへのリンク文言（Rev.15 で日英対応した） */
   readonly errLink: string
   /** 設定ペインの見出し */
@@ -64,7 +65,8 @@ const ja: DlStrings = {
   compare: '比較',
   notes: '注記',
   close: '閉じる',
-  exLink: 'スクワット',
+  navSquat: 'スクワット',
+  navDeadlift: 'デッドリフト',
   errLink: 'エラー例',
   bodySection: '身体的特徴',
   setupSection: 'セッティング',
@@ -112,7 +114,8 @@ const en: DlStrings = {
   compare: 'Compare',
   notes: 'Notes',
   close: 'Close',
-  exLink: 'Squat',
+  navSquat: 'Squat',
+  navDeadlift: 'Deadlift',
   errLink: 'Error examples',
   bodySection: 'Body',
   setupSection: 'Setup',

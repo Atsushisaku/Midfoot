@@ -169,7 +169,25 @@ const notesBtn = $<HTMLButtonElement>('#notesBtn')
 const notesList = $<HTMLUListElement>('#notesList')
 const notesClose = $<HTMLButtonElement>('#notesClose')
 const langSeg = $<HTMLDivElement>('#lang')
-const exLink = $<HTMLAnchorElement>('#exLink')
+const navEl = $<HTMLElement>('#nav')
+/**
+ * 種目ナビ（Rev.15）。現在地を `aria-current` でハイライトし、リンクには言語を引き継ぐ。
+ * `?lang=` の規約は 3 ページ共通で、既定の `ja` は付けない。
+ */
+function applyNav(current: 'squat' | 'deadlift', labels: { squat: string; deadlift: string }): void {
+  const q = getLang() === 'ja' ? '' : `?lang=${getLang()}`
+  // スクワットの href は file:// の 2 枚並べ運用でも辿れるよう index.html、
+  // それ以外は計測のパスが割れないよう './' に寄せる（従来の exLink と同じ規約）
+  const squatBase = location.protocol === 'file:' ? 'index.html' : './'
+  for (const a of navEl.querySelectorAll('a')) {
+    const page = a.dataset['page'] as 'squat' | 'deadlift'
+    a.textContent = labels[page]
+    a.href = (page === 'squat' ? squatBase : 'deadlift.html') + q
+    if (page === current) a.setAttribute('aria-current', 'page')
+    else a.removeAttribute('aria-current')
+  }
+}
+
 const errLink = $<HTMLAnchorElement>('#errLink')
 
 const el = <K extends keyof HTMLElementTagNameMap>(
@@ -507,12 +525,7 @@ function applyLang(): void {
   notesBtn.textContent = s.notes
   notesClose.setAttribute('aria-label', s.close)
   langSeg.setAttribute('aria-label', s.aria.lang)
-  exLink.textContent = s.exLink
-  // 種目を移動しても言語を保つ（スクワット版は ?lang= を読む。既定の ja は付けない）。
-  // href は file:// でも動くよう index.html にしてあるが、それ以外では './' に寄せて
-  // 計測のパスが「/」と「/index.html」に割れないようにする
-  const base = location.protocol === 'file:' ? 'index.html' : './'
-  exLink.href = getLang() === 'ja' ? base : `${base}?lang=${getLang()}`
+  applyNav('deadlift', { squat: s.navSquat, deadlift: s.navDeadlift })
 
   // エラー例のページも日英対応したので、言語を引き継いで渡す（?lang= の規約は exLink と同じ）
   errLink.textContent = s.errLink

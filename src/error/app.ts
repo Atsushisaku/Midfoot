@@ -99,7 +99,26 @@ const svg = $<SVGSVGElement>('#fig')
 const liftRow = $<HTMLDivElement>('#liftRow')
 const panel = $<HTMLDivElement>('#errPanel')
 const langSeg = $<HTMLDivElement>('#lang')
-const backLink = $<HTMLAnchorElement>('#backLink')
+const navEl = $<HTMLElement>('#nav')
+const crumb = $<HTMLSpanElement>('#crumb')
+/**
+ * 種目ナビ（Rev.15）。現在地を `aria-current` でハイライトし、リンクには言語を引き継ぐ。
+ * `?lang=` の規約は 3 ページ共通で、既定の `ja` は付けない。
+ */
+function applyNav(current: 'squat' | 'deadlift', labels: { squat: string; deadlift: string }): void {
+  const q = getLang() === 'ja' ? '' : `?lang=${getLang()}`
+  // スクワットの href は file:// の 2 枚並べ運用でも辿れるよう index.html、
+  // それ以外は計測のパスが割れないよう './' に寄せる（従来の exLink と同じ規約）
+  const squatBase = location.protocol === 'file:' ? 'index.html' : './'
+  for (const a of navEl.querySelectorAll('a')) {
+    const page = a.dataset['page'] as 'squat' | 'deadlift'
+    a.textContent = labels[page]
+    a.href = (page === 'squat' ? squatBase : 'deadlift.html') + q
+    if (page === current) a.setAttribute('aria-current', 'page')
+    else a.removeAttribute('aria-current')
+  }
+}
+
 
 /**
  * ボタン群。値（`v`）は言語によらず不変なので DOM は 1 度だけ作り、
@@ -332,9 +351,10 @@ function applyLang(): void {
   setFigureLang(getLang())
   document.documentElement.lang = getLang()
   document.title = s.title
-  backLink.textContent = s.backLink
-  // 戻り先でも言語を保つ（既定の ja は付けない。他の 2 ページと同じ規約）
-  backLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
+  // エラー例はデッドリフトの下位ページ。ナビはデッドリフトを選択したまま crumb を足す
+  applyNav('deadlift', { squat: s.navSquat, deadlift: s.navDeadlift })
+  crumb.textContent = s.crumb
+  crumb.hidden = false
   bodyRowLabel.textContent = s.bodyRow
   armRowLabel.textContent = s.armLabel
   errRowLabel.textContent = s.errorRow

@@ -12,11 +12,17 @@
   color-scheme: light;
 
   /*
-   * 図の上に浮かぶボタン列が占める高さ（Rev.13）。
-   * .corner の top(14) ＋ .cornerbtn の min-height(42) ＋ 逃げ(6)。
-   * この帯を図から空けるのに使う。値を変えるときは .corner / .cornerbtn と揃えること。
+   * 図の上に空ける帯（Rev.13 → Rev.15 で 0 に）。
+   *
+   * Rev.13 でこれを入れたのは、図の上部**中央**に置いていた種目リンクに
+   * 直立姿勢の頭が完全に隠れていたから。Rev.15 でそのリンクをヘッダーへ移したので、
+   * 帯に残るのは左端の注記ボタンだけになった。注記は左端にあり、図は横方向に
+   * 中央寄せなので**どの幅でも図と重ならない**（両ページ × 6 サイズ × 比較 ON/OFF ×
+   * スライダー両端で実測）。ヘッダーぶんの縦を取り返すため 0 にする。
+   *
+   * 上部中央に何かを戻すときは、ここを 62px（top 14 ＋ ボタン 42 ＋ 逃げ 6）に戻すこと。
    */
-  --corner-band: 62px;
+  --corner-band: 0px;
 }
 
 * {
@@ -54,6 +60,71 @@ body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+/* --- ヘッダー -------------------------------------------------------------- */
+
+/*
+ * サイト名・種目ナビ・言語切替。**現在地はナビのハイライトで示す**（Rev.15）。
+ *
+ * 以前は図の上部中央に「行き先の種目名」のボタンを 1 つ置いていた。
+ * デッドリフトを見ているのに「スクワット」と出るので、現在地のラベルと読み違える。
+ * ナビにして選択状態を出せば、現在地と行き先が同時に分かる。
+ */
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg);
+}
+
+/* 種目ナビ。見た目は .seg と同じだが中身はリンク */
+.seg.nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  min-height: 36px;
+  font-size: 14px;
+  color: var(--fg);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.seg.nav a + a {
+  border-left: 1px solid var(--border);
+}
+
+.seg.nav a[aria-current='page'] {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 下位ページ名（エラー例）。ナビはデッドリフトを選択したまま、ここに足す */
+.crumb {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.crumb::before {
+  content: '›';
+  margin-right: 8px;
+}
+
+/* 言語切替はヘッダーの右端へ */
+.topbar .seg.lang {
+  margin-left: auto;
+  box-shadow: none;
 }
 
 /* --- 図 ------------------------------------------------------------------ */
@@ -181,11 +252,6 @@ body {
   align-items: flex-start;
 }
 
-.corner.right {
-  right: 16px;
-  align-items: center;
-}
-
 /*
  * 図の左下（操作パネルとの仕切り線より上）。比較・頻出エラーをここに左詰めで置く。
  * 図は横方向に中央寄せなので、この隅は床の線の左端が通るだけで実質空いている。
@@ -194,13 +260,6 @@ body {
   top: auto;
   bottom: 10px;
   left: 16px;
-  align-items: center;
-}
-
-/* 種目の行き来は上部中央。左右の隅（比較・注記／言語）とぶつからない位置 */
-.corner.center {
-  left: 50%;
-  transform: translateX(-50%);
   align-items: center;
 }
 
@@ -448,19 +507,22 @@ body {
 
 /* 図の右上に出す。下に出すと操作パネルと上体角度の表示を覆ってしまう */
 /*
- * 注記パネル。**注記ボタンの真下**（画面左上）に出す。
+ * 注記パネル。**注記ボタンの真下**に出す。
  *
- * 元は画面右上（`inset: 16px 16px auto auto`）に固定されていて、ボタンと無関係な位置に
- * 開くうえ右上の言語切替を完全に覆っていた。ボタンを左上へ縦積みしたときの名残り。
+ * 元は画面右上に固定されていて、ボタンと無関係な位置に開くうえ右上の言語切替を
+ * 完全に覆っていた。ボタンを左上へ移したときの名残り。
  *
+ * 基準は `.stage`（`position: relative`）。ビューポート基準（fixed）だと
+ * Rev.15 で足したヘッダーのぶんだけ上にずれてボタンに重なるので、図の領域基準にする。
  * top の 64px は .corner の top(14) ＋ ボタン(42) ＋ 逃げ(8)。
+ *
  * 画面が低いときのために高さを頭打ちにして、溢れたぶんはパネル内スクロールにする。
  */
 #notes {
-  position: fixed;
+  position: absolute;
   inset: 64px auto auto 16px;
   max-width: min(460px, calc(100vw - 32px));
-  max-height: calc(100dvh - 80px);
+  max-height: calc(100dvh - 150px);
   overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--border);

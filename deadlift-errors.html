@@ -18,18 +18,26 @@
       日英対応。デッドリフト版から `?lang=` を受け取り、右上の切替でも変えられる。
     -->
     <div id="app">
+      <!--
+        ヘッダー。サイト名・種目ナビ・言語切替。
+        現在地はナビのハイライト（aria-current）で示す。エラー例はデッドリフトの
+        下位ページなので、ナビはデッドリフトを選択状態にしたうえで crumb を足す。
+        文言と href は app.ts が入れる（言語を ?lang= で引き継ぐため）。
+      -->
+      <header class="topbar">
+        <span class="brand">Midfoot</span>
+        <nav class="seg nav" id="nav">
+          <a data-page="squat" href="index.html"></a>
+          <a data-page="deadlift" href="deadlift.html"></a>
+        </nav>
+        <span class="crumb" id="crumb" hidden></span>
+        <div class="seg lang" id="lang" role="group">
+          <button data-v="ja">JA</button>
+          <button data-v="en">EN</button>
+        </div>
+      </header>
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
-        <div class="corner center">
-          <a class="cornerbtn ghost link" id="backLink" href="deadlift.html"></a>
-        </div>
-        <!-- 言語切替。markup は他の 2 ページと同じ -->
-        <div class="corner right">
-          <div class="seg lang" id="lang" role="group">
-            <button data-v="ja">JA</button>
-            <button data-v="en">EN</button>
-          </div>
-        </div>
       </section>
 
       <section class="controls">

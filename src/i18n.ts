@@ -14,7 +14,9 @@ export interface Strings {
   readonly notes: string
   readonly close: string
   /** デッドリフト版への行き来リンク（Rev.9） */
-  readonly exLink: string
+  /** 種目ナビの文言（Rev.15）。現在地はハイライトで示すので、両方の名前が要る */
+  readonly navSquat: string
+  readonly navDeadlift: string
   /** 設定ペイン */
   readonly bodySection: string
   readonly toolSection: string
@@ -61,7 +63,8 @@ const ja: Strings = {
   compare: '比較',
   notes: '注記',
   close: '閉じる',
-  exLink: 'デッドリフト',
+  navSquat: 'スクワット',
+  navDeadlift: 'デッドリフト',
   bodySection: '身体的特徴',
   toolSection: '担ぎ方・シューズ',
   simple: '簡易',
@@ -113,7 +116,8 @@ const en: Strings = {
   compare: 'Compare',
   notes: 'Notes',
   close: 'Close',
-  exLink: 'Deadlift',
+  navSquat: 'Squat',
+  navDeadlift: 'Deadlift',
   bodySection: 'Body',
   toolSection: 'Bar & shoes',
   simple: 'Simple',

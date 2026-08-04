@@ -16,8 +16,10 @@ export type Comment = readonly [string, string, string]
 
 export interface ErrStrings {
   readonly title: string
-  /** デッドリフト版へ戻るリンク */
-  readonly backLink: string
+  /** 種目ナビの文言。エラー例はデッドリフトの下位なので crumb を足す */
+  readonly navSquat: string
+  readonly navDeadlift: string
+  readonly crumb: string
   /** 行見出し */
   readonly bodyRow: string
   readonly errorRow: string
@@ -59,7 +61,9 @@ export interface ErrStrings {
 
 const ja: ErrStrings = {
   title: 'Midfoot デッドリフトのエラー例',
-  backLink: 'デッドリフトに戻る',
+  navSquat: 'スクワット',
+  navDeadlift: 'デッドリフト',
+  crumb: 'エラー例',
   bodyRow: '体格（両者共通）',
   errorRow: 'エラー',
   detailRow: '詳細',
@@ -120,7 +124,9 @@ const ja: ErrStrings = {
 
 const en: ErrStrings = {
   title: 'Midfoot — Deadlift error examples',
-  backLink: 'Back to deadlift',
+  navSquat: 'Squat',
+  navDeadlift: 'Deadlift',
+  crumb: 'Error examples',
   bodyRow: 'Proportions (shared)',
   errorRow: 'Error',
   detailRow: 'Detail',
