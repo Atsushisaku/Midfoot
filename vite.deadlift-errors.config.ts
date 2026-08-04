@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 
 /**
- * デッドリフトの頻出エラー（`deadlift-errors.html`）を単一 HTML として追加出力する設定。
+ * デッドリフトのエラー例（`deadlift-errors.html`）を単一 HTML として追加出力する設定。
  *
  * 事情は `vite.deadlift.config.ts` と同じ。`vite-plugin-singlefile` が
  * `output.inlineDynamicImports = true` を強制し、Rollup がこれを複数エントリと

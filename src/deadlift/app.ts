@@ -514,7 +514,7 @@ function applyLang(): void {
   const base = location.protocol === 'file:' ? 'index.html' : './'
   exLink.href = getLang() === 'ja' ? base : `${base}?lang=${getLang()}`
 
-  // 頻出エラーのページは日本語のみ。英語表示のときは出さない
+  // エラー例のページは日本語のみ。英語表示のときは出さない
   // （英語のラベルで日本語のページへ送るほうが不親切なため）
   errLink.textContent = s.errLink
   errLink.hidden = getLang() !== 'ja'
