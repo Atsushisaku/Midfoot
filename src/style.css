@@ -133,13 +133,6 @@ body {
   box-shadow: none;
 }
 
-/* ヘッダーに置くボタンはナビと同じ高さに合わせる（.cornerbtn の 42px は図の上用） */
-.topbtn {
-  min-height: 36px;
-  padding: 7px 14px;
-  font-size: 14px;
-  box-shadow: none;
-}
 
 /* --- 図 ------------------------------------------------------------------ */
 
@@ -264,6 +257,12 @@ body {
   left: 16px;
   flex-direction: column;
   align-items: flex-start;
+}
+
+/* 図の右上。注記だけを置く（言語切替は Rev.15 でヘッダーへ移した） */
+.corner.right {
+  right: 16px;
+  align-items: center;
 }
 
 /*
@@ -521,16 +520,17 @@ body {
 
 /* 図の右上に出す。下に出すと操作パネルと上体角度の表示を覆ってしまう */
 /*
- * 注記パネル。ヘッダー右端の注記ボタンの真下＝**図の右上**に出す（Rev.15）。
+ * 注記パネル。**図の右上にある注記ボタンの真下**に出す（Rev.15）。
  *
  * 基準は `.stage`（`position: relative`）。ビューポート基準（fixed）だと
  * ヘッダーの高さに依存してしまうので、図の領域基準にしてボタンと連動させる。
+ * top の 64px は .corner の top(14) ＋ ボタン(42) ＋ 逃げ(8)。
  *
  * 画面が低いときのために高さを頭打ちにして、溢れたぶんはパネル内スクロールにする。
  */
 #notes {
   position: absolute;
-  inset: 10px 16px auto auto;
+  inset: 64px 16px auto auto;
   max-width: min(460px, calc(100vw - 32px));
   max-height: calc(100dvh - 150px);
   overflow-y: auto;
