@@ -186,6 +186,17 @@ body {
   align-items: center;
 }
 
+/*
+ * 図の左下（操作パネルとの仕切り線より上）。比較・頻出エラーをここに左詰めで置く。
+ * 図は横方向に中央寄せなので、この隅は床の線の左端が通るだけで実質空いている。
+ */
+.corner.bottomleft {
+  top: auto;
+  bottom: 10px;
+  left: 16px;
+  align-items: center;
+}
+
 /* 種目の行き来は上部中央。左右の隅（比較・注記／言語）とぶつからない位置 */
 .corner.center {
   left: 50%;
@@ -348,19 +359,6 @@ body {
 .pane.pane-b {
   --accent: var(--bodyB);
   --accent-soft: #ffefe8;
-}
-
-/*
- * 操作バー（Rev.14）。スライダーの一段上に右詰めで置く。
- * 図の上に浮かせるボタンではなくパネルの中身なので、影は落とす。
- */
-.ctlbar {
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.ctlbar .cornerbtn {
-  box-shadow: none;
 }
 
 /* 深さ／挙上は全ペイン共有なので、図の直下に1本だけ中央に置く（Rev.11）。
