@@ -496,3 +496,174 @@ body {
     padding-top: 10px;
   }
 }
+
+/* --- エラー提示アプリ（error.html だけが使う）------------------------------ */
+
+#errPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 行見出し。体格・エラー・詳細が同じ列で揃うように、一番長い「体格（両者共通）」に合わせる */
+#errPanel .rowlabel {
+  font-size: 14px;
+  flex: 0 0 auto;
+  min-width: 9em;
+}
+
+#errPanel .rowsub {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* エラー側のスライダーのつまみはコーラル（右の体の色）に合わせる */
+#errPanel .row.sliders {
+  --accent: var(--bodyB);
+}
+
+.sliderval {
+  font-size: 13px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  min-width: 6.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mtable {
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.mtable th {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  padding: 2px 14px 4px;
+}
+
+.mtable th:first-child {
+  text-align: left;
+}
+
+.mtable td {
+  padding: 3px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.mtable td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mtable td.err {
+  color: var(--bodyB);
+}
+
+.mtable td.delta {
+  font-weight: 600;
+}
+
+/*
+ * 「詳細」行。カタログで選んだエラーで何が起きているかを 3 点の箇条書きで出す
+ * （現象だけを書く。原因は書かない）。体格・エラーと同じ「左に見出し、右に中身」の形。
+ *
+ * エラー未選択でも要素は残す（中身だけ差し替える）。消すと下の段が詰まって
+ * .stage の高さが変わり、**図そのものが動いてしまう**ため。
+ * 3 行ぶんの高さを先に確保しておくのも同じ理由で、だから箇条書きは必ず 3 点にする。
+ */
+.whatrow {
+  align-items: flex-start;
+}
+
+/* 見出しは箇条書きの 1 点目と行が揃う位置に置く（他の行はボタンなので中央揃えのまま） */
+.whatrow .rowlabel {
+  padding-top: 1px;
+  line-height: 1.7;
+}
+
+.whatlist {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--fg);
+  min-height: calc(1.7em * 3);
+  max-width: 56em;
+}
+
+.whatlist li {
+  padding-left: 0.1em;
+}
+
+.whatlist li::marker {
+  color: var(--muted);
+}
+
+.whatrow.muted .whatlist,
+.whatrow.muted .rowlabel {
+  color: var(--muted);
+}
+
+/* 主指標。バーの進みに対して脚がどこまで伸びたか */
+.legbox {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  min-height: 36px;
+}
+
+/* 狭い画面では 1 点が 2 行に折り返しうるので、確保する高さもそのぶん増やす */
+@media (max-width: 860px) {
+  .whatlist {
+    min-height: calc(1.7em * 5);
+  }
+}
+
+/* 「程度」はエラー未選択でも場所を残し、選べないことだけ示す */
+.is-off {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.leglabel {
+  color: var(--muted);
+}
+
+.legnum {
+  font-size: 26px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+
+.legnum.opt {
+  color: var(--bodyA);
+}
+
+.legnum.err {
+  color: var(--bodyB);
+}
+
+.legnum.err.bad {
+  font-weight: 600;
+}
+
+.legsep {
+  color: var(--border);
+}
+
+/* 最適比で 5% を超えて増えた指標だけ色を付ける。全部色を付けると強調にならない */
+.mtable td.delta.bad {
+  color: #d1453b;
+}
+
+.metricsnote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
