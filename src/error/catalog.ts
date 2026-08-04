@@ -91,9 +91,11 @@ export const CATALOG: readonly ErrorEntry[] = [
     // ぶっこ抜きと対称に「構え（hipDelta）＋動作中（hipLead）」の 2 成分で持つ。
     // hipDelta だけだと膝の前後は 1.9cm しか動かず、程度の差がほとんど出なかった。
     levels: [
-      { barOffsetCm: -0.5, hipLead: -0.15, hipDelta: 0, kneeAheadExtraCm: 1.5, hipLeadRamp: 0 },
+      // 軽度は「構えで腕が床と垂直になる」ところに合わせてある（実測 腕 0.2°）。
+      // 重度は元がきつすぎたので中等度側へ寄せた（背角 65°→60°）。
+      { barOffsetCm: -0.6, hipLead: -0.18, hipDelta: 0, kneeAheadExtraCm: 1.8, hipLeadRamp: 0 },
       { barOffsetCm: -1, hipLead: -0.3, hipDelta: 0, kneeAheadExtraCm: 3, hipLeadRamp: 0 },
-      { barOffsetCm: -1.5, hipLead: -0.45, hipDelta: 0, kneeAheadExtraCm: 4.5, hipLeadRamp: 0 },
+      { barOffsetCm: -1.3, hipLead: -0.4, hipDelta: 0, kneeAheadExtraCm: 4, hipLeadRamp: 0 },
     ],
   },
   {
