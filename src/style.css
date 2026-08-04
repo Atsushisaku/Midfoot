@@ -121,9 +121,23 @@ body {
   margin-right: 8px;
 }
 
-/* 言語切替はヘッダーの右端へ */
-.topbar .seg.lang {
+/* ヘッダー右側（注記・言語切替）。ひとまとめにして右端へ寄せる */
+.topbar-right {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar .seg.lang {
+  box-shadow: none;
+}
+
+/* ヘッダーに置くボタンはナビと同じ高さに合わせる（.cornerbtn の 42px は図の上用） */
+.topbtn {
+  min-height: 36px;
+  padding: 7px 14px;
+  font-size: 14px;
   box-shadow: none;
 }
 
@@ -507,20 +521,16 @@ body {
 
 /* 図の右上に出す。下に出すと操作パネルと上体角度の表示を覆ってしまう */
 /*
- * 注記パネル。**注記ボタンの真下**に出す。
- *
- * 元は画面右上に固定されていて、ボタンと無関係な位置に開くうえ右上の言語切替を
- * 完全に覆っていた。ボタンを左上へ移したときの名残り。
+ * 注記パネル。ヘッダー右端の注記ボタンの真下＝**図の右上**に出す（Rev.15）。
  *
  * 基準は `.stage`（`position: relative`）。ビューポート基準（fixed）だと
- * Rev.15 で足したヘッダーのぶんだけ上にずれてボタンに重なるので、図の領域基準にする。
- * top の 64px は .corner の top(14) ＋ ボタン(42) ＋ 逃げ(8)。
+ * ヘッダーの高さに依存してしまうので、図の領域基準にしてボタンと連動させる。
  *
  * 画面が低いときのために高さを頭打ちにして、溢れたぶんはパネル内スクロールにする。
  */
 #notes {
   position: absolute;
-  inset: 64px auto auto 16px;
+  inset: 10px 16px auto auto;
   max-width: min(460px, calc(100vw - 32px));
   max-height: calc(100dvh - 150px);
   overflow-y: auto;

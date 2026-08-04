@@ -31,17 +31,17 @@
           <a data-page="deadlift" href="deadlift.html"></a>
         </nav>
         <span class="crumb" id="crumb" hidden></span>
-        <div class="seg lang" id="lang" role="group">
-          <button data-v="ja">JA</button>
-          <button data-v="en">EN</button>
+        <div class="topbar-right">
+          <button class="cornerbtn ghost topbtn" id="notesBtn" aria-expanded="false"></button>
+          <div class="seg lang" id="lang" role="group">
+            <button data-v="ja">JA</button>
+            <button data-v="en">EN</button>
+          </div>
         </div>
       </header>
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
-        <div class="corner left">
-          <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
-        </div>
-        <!-- 注記。上のボタンの真下に開く。位置は .stage 基準（ヘッダーの高さに依存しない） -->
+        <!-- 注記。ヘッダー右の注記ボタンから開く。図の右上へ（.stage 基準） -->
         <aside id="notes" hidden>
           <button id="notesClose">×</button>
           <ul id="notesList"></ul>
