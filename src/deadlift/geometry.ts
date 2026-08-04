@@ -85,6 +85,47 @@ export const TORSO_TOP_DEG = -4
 export const LOCK_BLEND_START = 0.8
 
 /**
+ * 腰の先行（`hipLead`）が立ち上がりきる挙上進行度（Rev.11）。
+ * t=0 では最適と同じ姿勢にし、バーが床を離れた直後に崩れ切らせる。
+ */
+const HIP_LEAD_RAMP_END = 0.2
+
+/**
+ * エラーの逸脱を消し始める挙上進行度（Rev.11）。
+ *
+ * **エラーのあるフォームでも、立ち切った姿勢は模範とほぼ同じになる。**
+ * バーは腿に当たるので前には残れないし、膝も股関節も伸び切るしかない。
+ * エラーは「フィニッシュが違う」のではなく「そこへ至る道のりに無駄が多い」もの、
+ * という観察に合わせて、ここから t=1 にかけて逸脱を 0 へ戻す。
+ *
+ * `hipLead` にも掛ける。角度のほうはロックアウトへの寄せ（Rev.10）が t=1 で上書きするが、
+ * `hipLead` は膝の前方量にも効いていて**そちらは寄せの対象外**だから。掛けないと
+ * フィニッシュの膝が 0.7cm 前に残り、股関節が 1cm ずれた（実測）。
+ */
+const ERROR_FADE_START = 0.6
+
+/**
+ * 腰の先行（`hipLead`）で φ を走査するときの刻みと上限（度、Rev.11）。
+ * この範囲で「まだ成立する姿勢」の端を探し、hipLead=±1 をその端に対応させる。
+ */
+const HIP_LEAD_SCAN_DEG = 0.5
+const HIP_LEAD_SCAN_STEPS = 80
+
+/**
+ * 腰の先行で認める腕の前傾の上限（度、Rev.11）。
+ *
+ * 膝とバーが決まると姿勢の自由度は φ の 1 つだけなので、腰を上げると肩は腕の円に
+ * 沿って前へ滑る。上げすぎると交点が破綻側の枝へ飛ぶ（実測で肩がバーの 40cm 前、
+ * 腕の傾き 40° まで飛び出した）。
+ *
+ * 上限を肩の絶対位置ではなく**腕の傾き**で置くのは、そちらに物理的な根拠があるため。
+ * バーは手にぶら下がっているので、肩がバーより前に出るほどバーは前へ振れようとする。
+ * 20° を超える腕の角度を保つのは実際には無理で、その前にバーが体から離れる
+ * （＝別のエラーへ移行する。この連鎖のモデル化は今後の課題）。
+ */
+const ARM_AHEAD_MAX_DEG = 20
+
+/**
  * ロックアウトでの身体重心 x の目標（Rev.5-2）。
  * 立位の自然な身体重心は足首とミッドフットの間（≈0.06〜0.07）にあるので、
  * 挙上に合わせて目標をそこへ動かす。これがないと腰がバーの後方に取り残される。
@@ -218,6 +259,64 @@ export interface DlPoseInput {
    * 目標値そのものは `comT = comPos × midX`。
    */
   readonly comPos?: number
+
+  /**
+   * バー x の中足部からの前方オフセット（unit、既定 0 ＝ 中足部の真上。Rev.11）。
+   *
+   * エラー提示アプリ（`docs/error-app-requirements.md`）のための逸脱パラメータ。
+   * 「バーが身体から遠い」を表す。**省略時は 0 で、最適フォームの挙動は一切変わらない。**
+   *
+   * 足（＝支持基底）と身体重心の目標 `comT` は中足部を基準にしたままにしてある。
+   * バーだけが前へずれ、身体はもとの釣り合いを保とうとする、というのがこのモデルの見なし。
+   * その結果、肩が前へ届くぶん股関節が後ろへ逃げて背中が寝る（実際の「バーが遠い」に一致）。
+   */
+  readonly barOffset?: number
+
+  /**
+   * 腰の先行度（既定 0。Rev.11）。同じくエラー提示アプリのための逸脱パラメータで、
+   * 「ぶっこ抜き（ヒップシュート）」を表す。
+   *
+   * バー高は `t` のまま進め、**膝の前方量だけ**を脚の伸展の終端（正）／始端（負）へ
+   * 内分する。正なら脚が先に伸びてバーが置き去りになり、上体だけが倒れる
+   * ＝ ファーストプルをキャンセルした形。負なら逆（腰が落ちてから引く）。
+   * 範囲は −1〜+1（外側はクランプ）。
+   */
+  readonly hipLead?: number
+
+  /**
+   * クリアランス・キャップ（Rev.6）を無効にする（既定 false。Rev.11）。
+   *
+   * キャップは「バーが脛に食い込まないよう膝の前方量に上限を掛ける」もので、
+   * **上手い人がやっていることをモデルに埋め込んだ**制約。そのため
+   * 「腰を落としすぎて膝が前に出る」エラーを入れても、キャップが全部吸収してしまい
+   * 姿勢が一切変わらない（実測: hipHeight 0.5→0 で背角 +1°、腰高 変化なし）。
+   *
+   * エラー提示アプリはこれを外して**膝がバーの前へ出た状態そのもの**を描く。
+   * そのときバーは脛に当たるが、それはエラーの帰結として指標に出す（`barToShinCm`）。
+   * **省略時は false で、最適フォームの挙動は一切変わらない。**
+   */
+  readonly ignoreBarClearance?: boolean
+
+  /**
+   * 膝をさらに前へ出す量（unit、既定 0。Rev.11）。エラー提示アプリ用。
+   *
+   * 「上体の立てすぎ」を描くための逸脱。`hipHeight` 経由だと膝は 1.9cm しか動かせず、
+   * 「脛が前に倒れて上体がほぼ鉛直」という実際の見た目に届かなかった。
+   * ここは力学から導出した量ではなく**そう見えるように置いた値**で、
+   * エラーの描写なのでそれでよい、という判断（要件 §12）。
+   *
+   * `ignoreBarClearance` と併用する前提。単独で使うとキャップに吸収される。
+   */
+  readonly kneeAheadExtra?: number
+
+  /**
+   * `hipLead` が効き切る挙上進行度（既定 `HIP_LEAD_RAMP_END`。Rev.11）。
+   *
+   * 0 を渡すと**構え（t=0）から効く**。ぶっこ抜きは「セットアップは悪くないのに
+   * ファーストプルが飛ぶ」動作なので既定のランプが要るが、上体の立てすぎは
+   * **構えの時点ですでに腰が落ちている**ので、そちらはランプ無しで使う。
+   */
+  readonly hipLeadRamp?: number
 }
 
 /**
@@ -357,6 +456,33 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   const t = clamp(input.t, 0, 1)
 
   /**
+   * バーの水平位置（Rev.11）。既定（`barOffset` 省略）では中足部そのもの。
+   * 以降「バーに対する量」はすべて `barX`、「足・支持基底に対する量」は `midX` を使う。
+   */
+  /**
+   * 逸脱の残り具合（1=そのまま、0=最適と同じ）。フィニッシュを模範に揃えるためのもの。
+   * 位置に効く逸脱（バー・膝）に掛ける。角度に効く `hipLead` は Rev.10 の寄せが吸収する。
+   */
+  const errorFade = 1 - smoothstep(ERROR_FADE_START, 1, clamp(input.t, 0, 1))
+
+  const barX = midX + (input.barOffset ?? 0) * errorFade
+
+  /**
+   * 腰の先行度（Rev.11）。既定 0。
+   *
+   * `t` でランプさせる（`smoothstep(0, HIP_LEAD_RAMP_END, t)`）。ぶっこ抜きは
+   * 「セットアップは悪くないのにファーストプルが飛ぶ」動作なので、t=0 の姿勢は
+   * 最適と一致させ、**バーが床を離れた直後から崩れ始める**のが実像に合う。
+   * セットアップ自体が腰高いのは別のエラー（`hipHeight`）として分けてある。
+   */
+  const hipLeadRaw = clamp(input.hipLead ?? 0, -1, 1)
+  const hipLeadRamp = input.hipLeadRamp ?? HIP_LEAD_RAMP_END
+  const hipLead =
+    hipLeadRaw *
+    (hipLeadRamp > 0 ? smoothstep(0, hipLeadRamp, clamp(input.t, 0, 1)) : 1) *
+    errorFade
+
+  /**
    * 身体重心 x の目標（Rev.3 / Rev.5-2）。
    * 開始時は comPos（0=かかと、1=中足部）で選び、ロックアウトへ向けて COM_TOP へ
    * 線形に動かす。挙上とともに重心が前へ移るのが hips through の駆動力になる。
@@ -368,7 +494,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   // ロックアウト近傍では「股 →(体幹)→ 肩 →(腕)→ バー」がほぼ折り畳まれた特異配置になり、
   // 重心残差が φ に対して平坦かつ二重根になって、根から姿勢が決まらないため。
   // ここで組んだ姿勢が満たすバー高をロックアウト高として採り、t→1 でここへ寄せる。
-  const kneeAheadTop = Math.min(KNEE_AHEAD_TOP, midX - BAR_CLEARANCE - ankle.x, shankEff)
+  const kneeAheadTop = Math.min(KNEE_AHEAD_TOP, barX - BAR_CLEARANCE - ankle.x, shankEff)
   const kneeTopY = ankle.y + Math.sqrt(Math.max(0, shankEff ** 2 - kneeAheadTop ** 2))
   const hipTop: Vec = {
     x: ankle.x + kneeAheadTop - femurEff * Math.sin(PHI_TOP_DEG * DEG),
@@ -384,7 +510,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   // Rev.6 まではここが直立チェーン − 腕長（＝理論上の最大高）だったが、それだと
   // 肩・股・バーが厳密に一直線になり、上体を傾ける余地がゼロになっていた。
   const barY0 = resolveBarY(input.bar)
-  const armSpanTop = armLen ** 2 - (shoulderTop.x - midX) ** 2
+  const armSpanTop = armLen ** 2 - (shoulderTop.x - barX) ** 2
   const barYLock =
     armSpanTop > 0
       ? shoulderTop.y - Math.sqrt(armSpanTop)
@@ -393,7 +519,19 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   // バー x は常に中足部（このアプリの拘束その1）。
   // これは重心解を組み立てる間のバー位置。ロックアウトへの寄せ（Rev.10）が入ると
   // バー高は肩から導出し直すので、最終的な出力は下の `bar` になる。
-  const barSched: Vec = { x: midX, y: barY }
+  /**
+   * 重心解を組むときのバー位置（Rev.11）。**中足部に固定**する。
+   *
+   * `barOffset` を入れたときここを実際のバー位置にすると、腕の重心が前へ出たぶんを
+   * 打ち消すように体幹が後ろへ回り、**バーを前に置くほど上体が立つ**という逆の絵が出た
+   * （実測 t=0.35 で背角 36°→45°、肩はむしろ 3cm 後退）。
+   *
+   * 実際の人は「バーが遠いぶん自分の釣り合いを取り直す」のではなく、
+   * **いつもどおり構えて、遠いバーへ手を伸ばす**。だから釣り合い（＝ φ の決定）は
+   * 意図した位置＝中足部で解き、肩だけを実際のバーから取り直す（下の「バーの位置ずれ」）。
+   * 身体重心はその結果として前へ動く ＝ それがこのエラーの帰結。
+   */
+  const barSolve: Vec = { x: midX, y: barY }
 
   // --- 膝（§3-5）。腰の高さの自由度はここで閉じる（Rev.1 から変更なし） ---
   const hipHeight = clamp(input.hipHeight, 0, 1)
@@ -414,11 +552,31 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   const kneeY0 =
     ankle.y + Math.sqrt(Math.max(0, shankEff ** 2 - Math.min(kneeAhead0, 0.99 * shankEff) ** 2))
   const ratio = clamp((barY - ankle.y) / (kneeY0 - ankle.y), 0, 1)
-  const cap = ratio > 0 ? (midX - BAR_CLEARANCE - ankle.x) / ratio : Infinity
+  const cap = ratio > 0 ? (barX - BAR_CLEARANCE - ankle.x) / ratio : Infinity
 
   // 足が極端に大きいと kneeAhead が脛より長くなりうる。sqrt を守るだけだと
   // 脛の長さが保存されなくなるので、前方量そのものを脛長でも頭打ちにする。
-  const kneeAhead = Math.min(kneeAheadBase, cap, shankEff)
+  const kneeOpt = input.ignoreBarClearance
+    ? Math.min(kneeAheadBase, shankEff)
+    : Math.min(kneeAheadBase, cap, shankEff)
+
+  // --- 腰の先行（Rev.11）---
+  // 最適の膝位置を、脚の伸展の**終端／始端へ向けて内分**する。hipLead=0 で kneeOpt そのもの。
+  //
+  // 当初は「脚の伸展スケジュールだけ時間を早送りする」形で書いたが、実測したところ
+  // 挙上の中盤（t≈0.3〜0.6）は Rev.6 のクリアランス・キャップが膝位置を完全に支配していて、
+  // スケジュールを早送りしても min() がキャップを拾うので**何も変わらなかった**。
+  // キャップは「バーが脛に当たらない」という物理そのものなので外せない。そこで
+  // 時間ではなくキャップ後の値を直接内分する形にした（要件 §3.3 を更新済み）。
+  //
+  // 負側（腰が落ちてから引く）はキャップを超えうる。それはまさに「バーが脛に擦る」
+  // 状態なので、エラーの描写としては正しい。最適側（hipLead=0）は従来どおり超えない。
+  const kneeLead =
+    hipLead >= 0
+      ? kneeOpt + hipLead * (kneeAheadTop - kneeOpt)
+      : kneeOpt - hipLead * (Math.min(kneeAhead0, shankEff) - kneeOpt)
+  // 膝をさらに前へ（上体の立てすぎ用）。脛より長くはできない
+  const kneeAhead = Math.min(kneeLead + (input.kneeAheadExtra ?? 0) * errorFade, 0.99 * shankEff)
   const knee: Vec = {
     x: ankle.x + kneeAhead,
     y: ankle.y + Math.sqrt(Math.max(0, shankEff ** 2 - kneeAhead ** 2)),
@@ -428,26 +586,26 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   const footComX = 0.5 * foot
 
   /** 股関節と肩が決まったときの身体重心 x（Winter の質量比） */
-  const comXOf = (hip: Vec, shoulder: Vec): number =>
+  const comXOf = (hip: Vec, shoulder: Vec, handX: number): number =>
     SEGMENT_MASS.foot * footComX +
     SEGMENT_MASS.shank * (knee.x + COM_RATIO.shank * (ankle.x - knee.x)) +
     SEGMENT_MASS.femur * (hip.x + COM_RATIO.femur * (knee.x - hip.x)) +
     SEGMENT_MASS.torso * (hip.x + COM_RATIO.torso * (shoulder.x - hip.x)) +
-    SEGMENT_MASS.arm * (shoulder.x + COM_RATIO.arm * (midX - shoulder.x))
+    SEGMENT_MASS.arm * (shoulder.x + COM_RATIO.arm * (handX - shoulder.x))
 
   /**
    * φ から姿勢を組む。クロージャは φ ループの外で 1 回だけ作る（毎フレーム 2 体分
    * 呼ばれるので、走査 70 点 + 二分 50 回のたびに関数を作り直さない）。
    * 股関節は膝の後上方 `K + femurEff·(−sinφ, cosφ)`、肩は円 (hip, torso) ∩ (bar, armLen)。
    */
-  const poseAt = (phiDeg: number): Branch | null => {
+  const poseAt = (phiDeg: number, bar: Vec): Branch | null => {
     const r = phiDeg * DEG
     const hip: Vec = {
       x: knee.x - femurEff * Math.sin(r),
       y: knee.y + femurEff * Math.cos(r),
     }
-    const dx = barSched.x - hip.x
-    const dy = barSched.y - hip.y
+    const dx = bar.x - hip.x
+    const dy = bar.y - hip.y
     const d = Math.hypot(dx, dy)
     // 股からバーまでが体幹＋腕で届かない／近すぎて交わらないときは物理枝でない。
     if (d <= 0 || d > torso + armLen || d < Math.abs(torso - armLen)) return null
@@ -468,7 +626,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     // 中間の t にこの枝の交差が現れることがある。
     const torsoDeg = Math.atan2(shoulder.x - hip.x, shoulder.y - hip.y) / DEG
     if (90 - torsoDeg > BACK_HORIZ_MAX_DEG) return null
-    return { phiDeg, hip, shoulder, comX: comXOf(hip, shoulder) }
+    return { phiDeg, hip, shoulder, comX: comXOf(hip, shoulder, bar.x) }
   }
 
   // --- φ の走査（Rev.3）---
@@ -481,7 +639,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
   let lastValid: Branch | null = null
   let prev: Branch | null = null
   for (let phiDeg = PHI_MIN_DEG; phiDeg <= PHI_MAX_DEG + 1e-9; phiDeg += PHI_STEP_DEG) {
-    const b = poseAt(phiDeg)
+    const b = poseAt(phiDeg, barSolve)
     if (b === null) {
       prev = null
       continue
@@ -505,7 +663,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     let best: Branch = bracketHi
     for (let i = 0; i < BISECT_ITER; i++) {
       const mid = (lo + hi) / 2
-      const b = poseAt(mid)
+      const b = poseAt(mid, barSolve)
       if (b === null) {
         // 両端が有効な 2° 幅の中で無効点が出るのは実測では起きないが、
         // 出たときに区間が壊れないよう正側（重心が前）に寄せて潰す。
@@ -516,7 +674,7 @@ export function solveDlPose(input: DlPoseInput): DlPose {
       if (b.comX > comT) lo = mid
       else hi = mid
     }
-    solution = poseAt((lo + hi) / 2) ?? best
+    solution = poseAt((lo + hi) / 2, barSolve) ?? best
   } else if (lastValid !== null && firstValid !== null) {
     // --- クランプ（Rev.3）---
     // 符号変化が無い＝目標の重心位置がこの体格・この膝の閉じ方では実現できない。
@@ -530,21 +688,56 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     // 物理枝が 1 つも無い極端な体格。描画が破綻しないよう、Rev.1 と同じ
     // 「腕は鉛直・股関節は膝から肩へ向けてクランプ」で有限な座標を作る。
     warn = 'reach'
-    const shoulder: Vec = { x: midX, y: barY + armLen }
+    const shoulder: Vec = { x: barX, y: barY + armLen }
     const dx = shoulder.x - knee.x
     const dy = shoulder.y - knee.y
     const d = Math.hypot(dx, dy)
     const ux = d > 0 ? dx / d : 0
     const uy = d > 0 ? dy / d : -1
     const hip: Vec = { x: knee.x + femurEff * ux, y: knee.y + femurEff * uy }
-    solution = { phiDeg: 0, hip, shoulder, comX: comXOf(hip, shoulder) }
+    solution = { phiDeg: 0, hip, shoulder, comX: comXOf(hip, shoulder, barSolve.x) }
+  }
+
+  // --- 腰の先行：股関節の高さ（Rev.11）---
+  // 膝の内分（上）だけでは背角が数度しか動かない。実測すると、腰の高さと背角を
+  // 決めているのは膝ではなく**大腿角 φ** で、そこは重心拘束が握っているため。
+  // ぶっこ抜きは「釣り合いを保ったまま腰が上がる」のではなく、**腰を上げた結果として
+  // 重心が動く**動作なので、ここでは φ を規定し、重心 comX のほうを出力に落とす。
+  // これで順問題（姿勢を与えて帰結を計算する）になる ＝ 要件 §3.1 の狙いどおり。
+  if (hipLead !== 0) {
+    // 到達可能な φ の端まで走査し、hipLead=±1 をその端に対応させる。
+    // 「腰を N cm 上げる」と決め打つより頑健で、hipLead に対して単調になる
+    // （決め打つと、上げられる余地がない t で破綻枝を拾って逆戻りした）。
+    const dir = hipLead > 0 ? -1 : 1 // 腰を上げる ＝ 大腿を立てる ＝ φ を減らす
+    let limit = solution.phiDeg
+    for (let k = 1; k <= HIP_LEAD_SCAN_STEPS; k++) {
+      const phi = solution.phiDeg + dir * k * HIP_LEAD_SCAN_DEG
+      const probe = poseAt(phi, barSolve)
+      if (probe === null) break
+      const armDeg =
+        Math.atan2(probe.shoulder.x - barSolve.x, probe.shoulder.y - barSolve.y) / DEG
+      if (armDeg > ARM_AHEAD_MAX_DEG) break
+      limit = phi
+    }
+    const b = poseAt(lerp(solution.phiDeg, limit, Math.abs(hipLead)), barSolve)
+    if (b !== null) solution = b
+    // 姿勢を重心目標に合わせていないので「目標に届かなかった」の警告は成り立たない
+    warn = 'none'
+  }
+
+  // --- バーの位置ずれ（Rev.11）---
+  // φ（＝下半身の構え）は意図どおりのまま、実際のバーへ手を伸ばした肩に取り直す。
+  // 体幹が前へ倒れ、身体重心は comT から前へずれる。そのずれがこのエラーの帰結。
+  if (barX !== midX) {
+    const reached = poseAt(solution.phiDeg, { x: barX, y: barY })
+    if (reached !== null) solution = reached
   }
 
   // --- ロックアウトへの寄せ（Rev.10）---
   // 重心解の (φ, 体幹角) を規定値へ smoothstep で寄せる。角度で混ぜるので体節長は常に厳密。
   const w = smoothstep(LOCK_BLEND_START, 1, t)
   let { hip, shoulder } = solution
-  let bar = barSched
+  let bar: Vec = { x: barX, y: barY }
   if (w > 0) {
     const phi = lerp(solution.phiDeg, PHI_TOP_DEG, w)
     const th = lerp(Math.atan2(shoulder.x - hip.x, shoulder.y - hip.y) / DEG, TORSO_TOP_DEG, w)
@@ -559,14 +752,14 @@ export function solveDlPose(input: DlPoseInput): DlPose {
     // 角度を混ぜると肩は腕の円から外れるので、バー高のほうを肩に合わせ直す
     // （バーは手にぶら下がっている＝バー高は肩から腕長ぶん下、が本来の因果）。
     // w=0 では解が既に円上にあるので導出値はスケジュール値と一致し、接続は連続。
-    const span = armLen ** 2 - (shoulder.x - midX) ** 2
-    if (span > 0) bar = { x: midX, y: shoulder.y - Math.sqrt(span) }
+    const span = armLen ** 2 - (shoulder.x - barX) ** 2
+    if (span > 0) bar = { x: barX, y: shoulder.y - Math.sqrt(span) }
     // 寄せが効いている間は姿勢を重心目標に合わせていないので、「目標に届かなかった」
     // という意味の reach 表示は成り立たない。実測では reach が立つのは t<0.2 だけなので、
     // ここで落としても表示が途中で消えるようなことは起きない。
     warn = 'none'
   }
-  const comX = w > 0 ? comXOf(hip, shoulder) : solution.comX
+  const comX = w > 0 ? comXOf(hip, shoulder, bar.x) : solution.comX
 
   // --- 角度（§3-7 / Rev.3）---
   const torsoDeg = Math.atan2(shoulder.x - hip.x, shoulder.y - hip.y) / DEG

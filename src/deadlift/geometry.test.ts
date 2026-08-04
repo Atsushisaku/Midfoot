@@ -660,6 +660,78 @@ describe('クランプと数値の健全性（§3-8 / Rev.3）', () => {
     }
   })
 
+  /**
+   * Rev.11 の逸脱パラメータ（エラー提示アプリ用）は、**省略時と 0 指定時で完全に同一**。
+   * ここが崩れると最適フォーム側（公開中の 2 ページ）の挙動が変わる。
+   */
+  it('Rev.11 の逸脱パラメータは既定値で最適フォームを一切変えない', () => {
+    for (const p of DL_PRESETS) {
+      for (const stanceDeg of STANCES) {
+        for (const t of [0, 0.35, 0.6, 1]) {
+          const base = solveDlPose(input({ body: p.body, stanceDeg, t }))
+          const zero = solveDlPose(
+            input({
+              body: p.body,
+              stanceDeg,
+              t,
+              barOffset: 0,
+              hipLead: 0,
+              ignoreBarClearance: false,
+            }),
+          )
+          const label = `${p.id}/α=${stanceDeg}/t=${t}`
+          for (const k of ['hip', 'knee', 'shoulder', 'bar'] as const) {
+            expect(zero[k].x, `${label}/${k}.x`).toBe(base[k].x)
+            expect(zero[k].y, `${label}/${k}.y`).toBe(base[k].y)
+          }
+          expect(zero.comX, label).toBe(base.comX)
+          expect(zero.warn, label).toBe(base.warn)
+        }
+      }
+    }
+  })
+
+  /**
+   * バーを前へずらすと、そのぶん梃子が伸びる。
+   *
+   * **背角はほとんど動かない**（+8cm で 1° 未満）。φ ＝ 下半身の構えは意図どおりのままで、
+   * 動くのは腕の角度とバーの位置だからで、これは意図した挙動。
+   * 「バーが遠い」の指紋は背角ではなく**梃子の伸び**のほうに出る、というのが
+   * プロトタイプで分かったこと（要件 §4.1 に記録）。
+   */
+  it('barOffset を前に振ると梃子が伸び、バーが脛から離れる', () => {
+    let prevHip = -Infinity
+    let prevShin = -Infinity
+    for (const cm of [0, 2, 5, 8]) {
+      const p = pose({ barOffset: cm / CM_PER_UNIT })
+      const hipArm = (p.bar.x - p.hip.x) * CM_PER_UNIT
+      const shin = (p.bar.x - legXAtBarHeight(p)) * CM_PER_UNIT
+      expect(hipArm, `+${cm}cm バー→股`).toBeGreaterThan(prevHip)
+      expect(shin, `+${cm}cm バー→脛`).toBeGreaterThan(prevShin)
+      prevHip = hipArm
+      prevShin = shin
+    }
+    // 背角がこのエラーの指紋ではないことも固定しておく
+    const base = pose().backHorizDeg
+    expect(Math.abs(pose({ barOffset: 8 / CM_PER_UNIT }).backHorizDeg - base)).toBeLessThan(1)
+  })
+
+  /** 腰の先行は t=0 では効かず（セットアップは同じ）、挙上中に腰を上げ背中を寝かせる */
+  it('hipLead はセットアップを変えず、挙上中に腰を上げて背角を寝かせる', () => {
+    expect(pose({ t: 0, hipLead: 1 }).hip.y).toBeCloseTo(pose({ t: 0 }).hip.y, 12)
+    for (const t of [0.35, 0.6]) {
+      let prevHipY = -Infinity
+      let prevBack = Infinity
+      for (const hipLead of [0, 0.5, 1]) {
+        const p = pose({ t, hipLead })
+        expect(p.hip.y, `t=${t}/lead=${hipLead} 腰高`).toBeGreaterThan(prevHipY)
+        expect(p.backHorizDeg, `t=${t}/lead=${hipLead} 背角`).toBeLessThan(prevBack)
+        prevHipY = p.hip.y
+        prevBack = p.backHorizDeg
+      }
+    }
+  })
+
   it('足長 0 を渡しても破綻しない', () => {
     const p = pose({ body: { ...STANDARD, foot: 0 } })
     expect(Number.isFinite(p.torsoDeg)).toBe(true)
