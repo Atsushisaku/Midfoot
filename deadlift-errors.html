@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- 文言は app.ts が言語に応じて入れる -->
     <title>Midfoot デッドリフトのエラー例</title>
     <script data-goatcounter="https://atsushisaku.goatcounter.com/count"
             async src="https://gc.zgo.at/count.js"></script>
@@ -14,13 +15,20 @@
       `vite-plugin-singlefile` が 1 エントリしか扱えないので、3 回目のビルドとして
       `vite.deadlift-errors.config.ts` で dist へ追記する（deadlift.html と同じ事情）。
 
-      **日本語のみ**。デッドリフト版から英語表示で来ても日本語のままになる（未対応）。
+      日英対応。デッドリフト版から `?lang=` を受け取り、右上の切替でも変えられる。
     -->
     <div id="app">
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="corner center">
-          <a class="cornerbtn ghost link" href="deadlift.html">デッドリフトに戻る</a>
+          <a class="cornerbtn ghost link" id="backLink" href="deadlift.html"></a>
+        </div>
+        <!-- 言語切替。markup は他の 2 ページと同じ -->
+        <div class="corner right">
+          <div class="seg lang" id="lang" role="group">
+            <button data-v="ja">JA</button>
+            <button data-v="en">EN</button>
+          </div>
         </div>
       </section>
 

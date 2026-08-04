@@ -1,5 +1,5 @@
 /**
- * エラー提示アプリのプロトタイプ。
+ * デッドリフトのエラー例。
  * 要件: docs/error-app-requirements.md
  *
  * 左＝最適フォーム、右＝エラーフォーム。**同一人物**なので体格・スタンスは共有する。
@@ -13,14 +13,20 @@
  * モデル層として残してあるが、この画面からは呼んでいない。
  *
  * 描画と幾何は `../deadlift/` のものをそのまま使う。
- * プロトタイプなので日本語のみ・URL 共有なし・dev 専用エントリ。
+ * 日英対応。URL 共有は持たないが、デッドリフト版が付ける `?lang=` だけは読む
+ * （他の 2 ページと同じ規約）。文言に依存する DOM の更新は `applyLang()` と
+ * 各 seg の `sync()` に集約してあり、言語を切り替えても同じ経路を通る。
  */
 
 import { CM_PER_UNIT, solveDlPose, type DlBody, type DlPose } from '../deadlift/geometry'
 import { ARM_LEVELS, DL_PRESETS, FOOT, STANCES } from '../deadlift/presets'
 import { COLORS, renderScene, type Scene } from '../deadlift/render'
-import { CATALOG, LEVEL_LABELS, NO_DEVIATION, type Deviation, type Level } from './catalog'
+// 図の中の文言（「背角（水平から）」など）は render.ts が deadlift 側の strings から引くので、
+// こちらの言語切替に合わせて**あちらの言語も揃える**必要がある
+import { setLang as setFigureLang } from '../deadlift/strings'
+import { CATALOG, NO_DEVIATION, type Deviation, type Level } from './catalog'
 import { legExtensionUsed } from './metrics'
+import { asLang, getLang, setLang, t, type Lang } from './strings'
 import '../style.css'
 
 const state = {
@@ -47,13 +53,13 @@ const bodyOf = (): DlBody => ({
 })
 
 /** 逸脱を渡さなければ最適フォーム。`hipHeight` の基準 0.5 は Rev.4 の規約（要件 §7.1） */
-function poseAt(t: number, dev: Deviation): DlPose {
+function poseAt(lift: number, dev: Deviation): DlPose {
   return solveDlPose({
     body: bodyOf(),
     bar: 'standard',
     stanceDeg: state.stanceDeg,
     hipHeight: 0.5 + dev.hipDelta,
-    t,
+    t: lift,
     barOffset: dev.barOffsetCm / CM_PER_UNIT,
     hipLead: dev.hipLead,
     kneeAheadExtra: dev.kneeAheadExtraCm / CM_PER_UNIT,
@@ -65,8 +71,8 @@ function poseAt(t: number, dev: Deviation): DlPose {
  * 脚の伸展の使用率（要件 §11.1）。物差しは**両者とも最適フォームの可動範囲**で取る。
  * エラー側の範囲で正規化すると、深く構えるエラーは範囲ごと広がって差が消える。
  */
-const legUsed = (dev: Deviation, t: number): number =>
-  legExtensionUsed(poseAt(0, NO_DEVIATION), poseAt(1, NO_DEVIATION), poseAt(t, dev))
+const legUsed = (dev: Deviation, lift: number): number =>
+  legExtensionUsed(poseAt(0, NO_DEVIATION), poseAt(1, NO_DEVIATION), poseAt(lift, dev))
 
 // ---------------------------------------------------------------------------
 // DOM
@@ -92,17 +98,26 @@ const el = <K extends keyof HTMLElementTagNameMap>(
 const svg = $<SVGSVGElement>('#fig')
 const liftRow = $<HTMLDivElement>('#liftRow')
 const panel = $<HTMLDivElement>('#errPanel')
+const langSeg = $<HTMLDivElement>('#lang')
+const backLink = $<HTMLAnchorElement>('#backLink')
 
+/**
+ * ボタン群。値（`v`）は言語によらず不変なので DOM は 1 度だけ作り、
+ * `sync()` で**文言と押下状態の両方**を更新する。こうしておくと言語切替でも
+ * 作り直さずに追従でき、押下状態の更新と同じ経路で済む。
+ */
 function buildSeg(
-  buttons: readonly { v: string; label: string }[],
+  values: readonly string[],
+  labelOf: (v: string) => string,
   isOn: (v: string) => boolean,
   onPick: (v: string) => void,
+  ariaOf: () => string,
 ): { seg: HTMLDivElement; sync: () => void } {
   const seg = el('div', 'seg presets')
   seg.setAttribute('role', 'group')
-  for (const b of buttons) {
-    const btn = el('button', '', b.label)
-    btn.dataset['v'] = b.v
+  for (const v of values) {
+    const btn = el('button')
+    btn.dataset['v'] = v
     seg.append(btn)
   }
   seg.addEventListener('click', (ev) => {
@@ -113,8 +128,11 @@ function buildSeg(
     }
   })
   const sync = () => {
+    seg.setAttribute('aria-label', ariaOf())
     for (const btn of seg.querySelectorAll('button')) {
-      btn.setAttribute('aria-pressed', String(isOn(btn.dataset['v']!)))
+      const v = btn.dataset['v']!
+      btn.textContent = labelOf(v)
+      btn.setAttribute('aria-pressed', String(isOn(v)))
     }
   }
   return { seg, sync }
@@ -122,7 +140,7 @@ function buildSeg(
 
 // --- 時間スライダー ＋ 再生 ---------------------------------------------------
 
-const playBtn = el('button', 'playbtn', '▶ 再生')
+const playBtn = el('button', 'playbtn')
 let play: { start: number } | null = null
 const PLAY_MS = 2600
 
@@ -132,6 +150,7 @@ liftSlider.min = '0'
 liftSlider.max = '1'
 liftSlider.step = '0.005'
 const liftRead = el('span', 'sliderval')
+const liftLabel = el('span')
 
 const syncLift = () => {
   liftSlider.value = String(state.lift)
@@ -139,7 +158,7 @@ const syncLift = () => {
 }
 const stopPlay = () => {
   play = null
-  playBtn.textContent = '▶ 再生'
+  playBtn.textContent = t().play
 }
 liftSlider.addEventListener('input', () => {
   state.lift = Number(liftSlider.value)
@@ -151,7 +170,7 @@ playBtn.addEventListener('click', () => {
   if (play) stopPlay()
   else {
     play = { start: performance.now() }
-    playBtn.textContent = '■ 停止'
+    playBtn.textContent = t().stop
     requestAnimationFrame(step)
   }
 })
@@ -165,81 +184,76 @@ function step(now: number): void {
 }
 
 const liftBox = el('div', 'slider')
-liftBox.append(el('span', '', '時間'), liftSlider, liftRead)
+liftBox.append(liftLabel, liftSlider, liftRead)
 liftRow.append(playBtn, liftBox)
 
 // --- 体格（共通）-------------------------------------------------------------
 
-const PRESET_LABELS: Record<string, string> = {
-  standard: '標準',
-  'long-femur': '大腿が長い',
-  'long-torso': '体幹が長い',
-}
-const ARM_LABELS = ['短い', '標準', '長い']
-const STANCE_LABELS = ['ナロー', 'ミドル', 'スモウ']
-
 const bodyRow = el('div', 'row')
-bodyRow.append(el('strong', 'rowlabel', '体格（両者共通）'))
+const bodyRowLabel = el('strong', 'rowlabel')
+const armRowLabel = el('span', 'rowsub')
 const presetSeg = buildSeg(
-  DL_PRESETS.map((p) => ({ v: p.id, label: PRESET_LABELS[p.id] ?? p.id })),
+  DL_PRESETS.map((p) => p.id),
+  (v) => t().presets[v] ?? v,
   (v) => v === state.presetId,
   (v) => {
     state.presetId = v
   },
+  () => t().aria.bodyPreset,
 )
 const armSeg = buildSeg(
-  ARM_LEVELS.map((m, i) => ({ v: String(m), label: ARM_LABELS[i]! })),
+  ARM_LEVELS.map(String),
+  (v) => t().armLevels[v] ?? v,
   (v) => Number(v) === state.mArm,
   (v) => {
     state.mArm = Number(v)
   },
+  () => t().aria.armLevel,
 )
 const stanceSeg = buildSeg(
-  STANCES.map((d, i) => ({ v: String(d), label: STANCE_LABELS[i]! })),
+  STANCES.map(String),
+  (v) => t().stances[v] ?? v,
   (v) => Number(v) === state.stanceDeg,
   (v) => {
     state.stanceDeg = Number(v)
   },
+  () => t().aria.stance,
 )
-bodyRow.append(presetSeg.seg, el('span', 'rowsub', '腕'), armSeg.seg, stanceSeg.seg)
+bodyRow.append(bodyRowLabel, presetSeg.seg, armRowLabel, armSeg.seg, stanceSeg.seg)
 
 // --- エラー（カタログ ＋ 程度）------------------------------------------------
 
 const errRow = el('div', 'row')
-errRow.append(el('strong', 'rowlabel', 'エラー'))
+const errRowLabel = el('strong', 'rowlabel')
+const levelLabel = el('span', 'rowsub')
 const errSeg = buildSeg(
-  [{ v: '', label: 'なし' }, ...CATALOG.map((e) => ({ v: e.id, label: e.label }))],
+  ['', ...CATALOG.map((e) => e.id)],
+  (v) => (v === '' ? t().none : (t().errors[v]?.label ?? v)),
   (v) => (v === '' ? state.errorId === null : v === state.errorId),
   (v) => {
     state.errorId = v === '' ? null : v
   },
+  () => t().aria.error,
 )
 const levelSeg = buildSeg(
-  LEVEL_LABELS.map((l, i) => ({ v: String(i), label: l })),
+  ['0', '1', '2'],
+  (v) => t().levels[Number(v) as Level],
   (v) => Number(v) === state.level,
   (v) => {
     state.level = Number(v) as Level
   },
+  () => t().aria.level,
 )
 // 「最大乖離点へ飛ぶ」ボタンは置かない。エラーは床を離れた直後にはもう出ていて、
 // 乖離が最大になる時点を探すより前に問題は見えているため（2026-08-03 判断）。
-const levelLabel = el('span', 'rowsub', '程度')
-errRow.append(errSeg.seg, levelLabel, levelSeg.seg)
-
-/**
- * エラー未選択のときの「詳細」。空にすると欄の高さが変わって図が動くので、常に 3 点置く。
- * カタログ側と同じく 3 点に揃えること（要件 §13）。
- */
-const NO_ERROR_COMMENT: readonly [string, string, string] = [
-  '左右とも模範フォーム',
-  '上のボタンでエラーを選ぶと、右側だけがその動きになる',
-  '程度（軽度／中等度／重度）も切り替えられる',
-]
+errRow.append(errRowLabel, errSeg.seg, levelLabel, levelSeg.seg)
 
 // 「詳細」は体格・エラーと同じ行の作り（左に見出し、右に中身）にする
 const whatRow = el('div', 'row whatrow')
+const whatRowLabel = el('strong', 'rowlabel')
 const whatList = el('ul', 'whatlist')
-whatRow.append(el('strong', 'rowlabel', '詳細'), whatList)
+whatRow.append(whatRowLabel, whatList)
+
 const legBox = el('div', 'legbox')
 panel.append(bodyRow, errRow, whatRow, legBox)
 
@@ -248,23 +262,24 @@ panel.append(bodyRow, errRow, whatRow, legBox)
 // ---------------------------------------------------------------------------
 
 /**
- * 主指標（要件 §11.1）。「バーの進み」に対して「脚をどこまで使ったか」。
+ * 主指標（要件 §11.1）。「バーの進み」に対して「脚をどこまで伸ばしたか」。
  * ぶっこ抜きは先食い、上体の立てすぎは遅れ、と 1 本で逆向きに出る。
  *
  * エラー未選択でも**空にしない**。空にすると高さが変わって図が動くし、
  * 模範だけの値にも意味がある（要件 §13）。
  */
 function renderLeg(hasError: boolean): void {
-  const t = state.lift
-  const o = legUsed(NO_DEVIATION, t)
+  const s = t()
+  const now = state.lift
+  const o = legUsed(NO_DEVIATION, now)
   const pct = (v: number) => `${Math.round(v * 100)}%`
-  const head = el('span', 'leglabel', `バーが ${pct(t)} 上がった時点で、脚は`)
+  const head = el('span', 'leglabel', s.legLead(pct(now)))
 
   if (!hasError) {
-    legBox.replaceChildren(head, el('span', 'legnum opt', pct(o)), el('span', 'leglabel', '伸びている'))
+    legBox.replaceChildren(head, el('span', 'legnum opt', pct(o)), el('span', 'leglabel', s.legTail))
     return
   }
-  const e = legUsed(currentDev(), t)
+  const e = legUsed(currentDev(), now)
   const gap = e - o
   const errNum = el('span', 'legnum err', pct(e))
   if (Math.abs(gap) > 0.08) errNum.classList.add('bad')
@@ -273,11 +288,7 @@ function renderLeg(hasError: boolean): void {
     el('span', 'legnum opt', pct(o)),
     el('span', 'legsep', '／'),
     errNum,
-    el(
-      'span',
-      'leglabel',
-      gap > 0.08 ? '伸びている（脚を使うのが早すぎる）' : gap < -0.08 ? '伸びている（脚が使えていない）' : '伸びている',
-    ),
+    el('span', 'leglabel', gap > 0.08 ? s.legEarly : gap < -0.08 ? s.legLate : s.legTail),
   )
 }
 
@@ -297,7 +308,8 @@ function render(): void {
   // 説明も指標も常に置いたままにして中身だけ差し替える（要件 §13）。
   // 程度は選べないだけにして、場所は残す。
   const entry = currentEntry()
-  whatList.replaceChildren(...(entry ? entry.what : NO_ERROR_COMMENT).map((line) => el('li', '', line)))
+  const comment = entry ? (t().errors[entry.id]?.what ?? t().noneComment) : t().noneComment
+  whatList.replaceChildren(...comment.map((line) => el('li', '', line)))
   whatRow.classList.toggle('muted', entry === null)
   levelSeg.seg.classList.toggle('is-off', entry === null)
   levelLabel.classList.toggle('is-off', entry === null)
@@ -310,5 +322,44 @@ function render(): void {
   levelSeg.sync()
 }
 
+// ---------------------------------------------------------------------------
+// 言語
+// ---------------------------------------------------------------------------
+
+/** 文言に依存する DOM の更新はここに集約する（切替時に同じ経路を通る） */
+function applyLang(): void {
+  const s = t()
+  setFigureLang(getLang())
+  document.documentElement.lang = getLang()
+  document.title = s.title
+  backLink.textContent = s.backLink
+  // 戻り先でも言語を保つ（既定の ja は付けない。他の 2 ページと同じ規約）
+  backLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
+  bodyRowLabel.textContent = s.bodyRow
+  armRowLabel.textContent = s.armLabel
+  errRowLabel.textContent = s.errorRow
+  levelLabel.textContent = s.levelLabel
+  whatRowLabel.textContent = s.detailRow
+  liftLabel.textContent = s.time
+  if (!play) playBtn.textContent = s.play
+  langSeg.setAttribute('aria-label', s.aria.lang)
+  for (const btn of langSeg.querySelectorAll('button')) {
+    btn.setAttribute('aria-pressed', String(btn.dataset['v'] === getLang()))
+  }
+}
+
+// URL 共有は持たないが、デッドリフト版が付ける ?lang= だけは読む
+const initial = asLang(new URLSearchParams(location.search).get('lang'))
+if (initial) setLang(initial)
+
+langSeg.addEventListener('click', (ev) => {
+  const v = asLang((ev.target as HTMLElement).closest('button')?.dataset['v'] ?? null)
+  if (!v || v === getLang()) return
+  setLang(v as Lang)
+  applyLang()
+  render()
+})
+
+applyLang()
 syncLift()
 render()

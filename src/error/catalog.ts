@@ -2,6 +2,9 @@
  * エラーのカタログ。
  * 要件: docs/error-app-requirements.md §5 / §11
  *
+ * **表示テキストは持たない**。エラー名と「詳細」の 3 点は `./strings` が言語別に持ち、
+ * ここは `id` と逸脱パラメータだけを持つ（スクワット版のプリセットと同じ流儀）。
+ *
  * **1 項目 = 1 つの症候群**。インストラクターが見るのは「現象の名前」だけで、
  * 内部の逸脱パラメータ（バー位置・腰の先行・腰の高さ）は見せない。
  * これが要件 §7.3 の「原因と現象を混ぜない」の実装で、スライダーを撤去した理由でもある。
@@ -45,22 +48,10 @@ export const NO_DEVIATION: Deviation = {
 }
 
 export type Level = 0 | 1 | 2
-export const LEVEL_LABELS = ['軽度', '中等度', '重度'] as const
 
 export interface ErrorEntry {
+  /** 文言（エラー名・詳細の 3 点）を `./strings` から引くためのキー */
   readonly id: string
-  readonly label: string
-  /**
-   * 「コメント」欄の箇条書き。指導でそのまま読み上げられる文にする。
-   * **何が起きているか（現象）だけ**を書き、原因や修正キューは書かない（要件 §7.3）。
-   *
-   * 専門用語と翻訳調を避ける。「脚の伸展」→「脚が伸びる」、「梃子」→「負担」、
-   * 「肩が前へ滑る」→「肩が前に出る」。
-   *
-   * **必ず 3 点。1 点は 1400px 幅で 1 行に収める**（要件 §13）。
-   * 数が揃っていないと、項目を切り替えたときに欄の高さが変わって図まで動く。
-   */
-  readonly what: readonly [string, string, string]
   /** 軽度／中等度／重度 */
   readonly levels: readonly [Deviation, Deviation, Deviation]
 }
@@ -68,12 +59,6 @@ export interface ErrorEntry {
 export const CATALOG: readonly ErrorEntry[] = [
   {
     id: 'hipShoot',
-    label: 'ぶっこ抜き',
-    what: [
-      '腰だけが先に上がり、上体が寝る',
-      '序盤で脚を使い切るため、バーが膝を越えたあたりで詰まりやすい',
-      '肩が前に出るため、バーが体から離れやすい',
-    ],
     levels: [
       { barOffsetCm: 1.5, hipLead: 0.35, hipDelta: 0.15, kneeAheadExtraCm: 0 },
       { barOffsetCm: 3, hipLead: 0.6, hipDelta: 0.3, kneeAheadExtraCm: 0 },
@@ -82,12 +67,6 @@ export const CATALOG: readonly ErrorEntry[] = [
   },
   {
     id: 'upright',
-    label: '上体の立てすぎ',
-    what: [
-      '上体を立てようとして尻が落ちる',
-      '脚が伸びないまま引くため、ファーストプルが重い',
-      '膝が前に出やすいため、バー軌道が鉛直になりにくい',
-    ],
     // ぶっこ抜きと対称に「構え（hipDelta）＋動作中（hipLead）」の 2 成分で持つ。
     // hipDelta だけだと膝の前後は 1.9cm しか動かず、程度の差がほとんど出なかった。
     levels: [
@@ -105,12 +84,6 @@ export const CATALOG: readonly ErrorEntry[] = [
   },
   {
     id: 'barFar',
-    label: 'バーが遠い',
-    what: [
-      'バーが中足部より前にある',
-      '姿勢そのものは崩れていない',
-      '離れただけ、腰と股関節の負担が増える',
-    ],
     levels: [
       { barOffsetCm: 2, hipLead: 0, hipDelta: 0, kneeAheadExtraCm: 0 },
       { barOffsetCm: 5, hipLead: 0, hipDelta: 0, kneeAheadExtraCm: 0 },

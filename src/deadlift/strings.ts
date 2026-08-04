@@ -17,10 +17,7 @@ export interface DlStrings {
   readonly close: string
   /** スクワット版への行き来リンク（Rev.9） */
   readonly exLink: string
-  /**
-   * エラー例のページへのリンク文言。
-   * **リンク先は日本語のみ**なので、英語表示のときはリンク自体を出さない（app.ts 参照）。
-   */
+  /** エラー例のページへのリンク文言（Rev.15 で日英対応した） */
   readonly errLink: string
   /** 設定ペインの見出し */
   readonly bodySection: string

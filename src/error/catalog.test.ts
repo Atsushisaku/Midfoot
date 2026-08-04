@@ -23,7 +23,7 @@ test('フィニッシュ（t=1）は 3 項目 × 3 段 × 体格 すべて模範
     for (const e of CATALOG) {
       for (let lv = 0; lv < 3; lv++) {
         const p = P(1, e.levels[lv]!, pr.id)
-        const label = `${pr.id}/${e.label}/lv${lv}`
+        const label = `${pr.id}/${e.id}/lv${lv}`
         for (const k of ['hip', 'knee', 'shoulder', 'bar', 'ankle'] as const) {
           expect(Math.abs(p[k].x - ref[k].x) * CM_PER_UNIT, `${label}/${k}.x`).toBeLessThan(0.05)
           expect(Math.abs(p[k].y - ref[k].y) * CM_PER_UNIT, `${label}/${k}.y`).toBeLessThan(0.05)

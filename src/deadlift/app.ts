@@ -514,10 +514,10 @@ function applyLang(): void {
   const base = location.protocol === 'file:' ? 'index.html' : './'
   exLink.href = getLang() === 'ja' ? base : `${base}?lang=${getLang()}`
 
-  // エラー例のページは日本語のみ。英語表示のときは出さない
-  // （英語のラベルで日本語のページへ送るほうが不親切なため）
+  // エラー例のページも日英対応したので、言語を引き継いで渡す（?lang= の規約は exLink と同じ）
   errLink.textContent = s.errLink
-  errLink.hidden = getLang() !== 'ja'
+  errLink.href =
+    getLang() === 'ja' ? 'deadlift-errors.html' : `deadlift-errors.html?lang=${getLang()}`
 
   notesList.replaceChildren(
     ...s.notesList.map((html) => {
