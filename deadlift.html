@@ -18,6 +18,9 @@
     <div id="app">
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="corner left">
+          <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
+        </div>
         <!-- 種目の行き来。`./` ではなく `index.html` にしてあるのは、
              単一HTMLを2つ並べて file:// で開く運用（ダブルクリック起動）でも辿れるようにするため。
              Pages（/Midfoot/deadlift.html）でも dev サーバでも同じように解決できる。
@@ -42,25 +45,22 @@
           挙上は両ペイン共有で、図のすぐ下に置く：モバイルでは設定ペインが縦に
           伸びるため、下端に置くと画面外へ出て「動かしながら図を見る」ができなくなる
         -->
-        <div class="ctlbar">
-          <div class="ctlbar-left">
-            <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
-            <!-- 頻出エラーのページへ。文言と表示可否（日本語のときだけ）は app.ts が決める -->
-            <a class="cornerbtn ghost link" id="errLink" href="deadlift-errors.html"></a>
-            <button class="cornerbtn ghost" id="notesBtn" aria-expanded="false"></button>
-          </div>
-          <div class="row sliders depth-row" id="liftRow"></div>
+        <!-- 操作ボタンはスライダーの一段上に右詰めで置く -->
+        <div class="row ctlbar">
+          <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
+          <!-- 頻出エラーのページへ。文言と表示可否（日本語のときだけ）は app.ts が決める -->
+          <a class="cornerbtn ghost link" id="errLink" href="deadlift-errors.html"></a>
         </div>
+        <div class="row sliders depth-row" id="liftRow"></div>
         <!-- 設定ペイン。単体=1ペイン、比較=2ペイン。中身は app.ts が生成する -->
         <div class="panes" id="panes"></div>
-
-        <!-- 注記の中身は strings.ts の notesList から app.ts が入れる -->
-        <aside id="notes" hidden>
-          <button id="notesClose">×</button>
-          <ul id="notesList"></ul>
-        </aside>
       </section>
 
+      <!-- 注記。図の左上のボタンから開く。ビューポート基準の固定配置 -->
+      <aside id="notes" hidden>
+        <button id="notesClose">×</button>
+        <ul id="notesList"></ul>
+      </aside>
     </div>
     <script type="module" src="/src/deadlift/app.ts"></script>
   </body>
