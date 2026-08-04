@@ -92,10 +92,15 @@ export const CATALOG: readonly ErrorEntry[] = [
     // hipDelta だけだと膝の前後は 1.9cm しか動かず、程度の差がほとんど出なかった。
     levels: [
       // 軽度は「構えで腕が床と垂直になる」ところに合わせてある（実測 腕 0.2°）。
-      // 重度は元がきつすぎたので中等度側へ寄せた（背角 65°→60°）。
+      //
+      // 重度だけ膝の前出しをやめて（`kneeAheadExtraCm: 0`）脛を立てる。
+      // 「ここまで重度になる人はほぼいないが、このタイプになると脛を立て始める」
+      // という観察（atsushi さん）に合わせたもので、**脛の傾きは中等度から反転する**
+      // （17° → 18° → 14°）。背角と腕の傾きは 3 段とも単調なままなので、
+      // 重度は「さらに立って、しかも脛が起きてくる」という別種の絵になる。
       { barOffsetCm: -0.6, hipLead: -0.18, hipDelta: 0, kneeAheadExtraCm: 1.8, hipLeadRamp: 0 },
       { barOffsetCm: -1, hipLead: -0.3, hipDelta: 0, kneeAheadExtraCm: 3, hipLeadRamp: 0 },
-      { barOffsetCm: -1.3, hipLead: -0.4, hipDelta: 0, kneeAheadExtraCm: 4, hipLeadRamp: 0 },
+      { barOffsetCm: -1.3, hipLead: -0.6, hipDelta: 0, kneeAheadExtraCm: 0, hipLeadRamp: 0 },
     ],
   },
   {
