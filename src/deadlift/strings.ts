@@ -17,6 +17,11 @@ export interface DlStrings {
   readonly close: string
   /** スクワット版への行き来リンク（Rev.9） */
   readonly exLink: string
+  /**
+   * 頻出エラーのページへのリンク文言。
+   * **リンク先は日本語のみ**なので、英語表示のときはリンク自体を出さない（app.ts 参照）。
+   */
+  readonly errLink: string
   /** 設定ペインの見出し */
   readonly bodySection: string
   readonly setupSection: string
@@ -63,6 +68,7 @@ const ja: DlStrings = {
   notes: '注記',
   close: '閉じる',
   exLink: 'スクワット',
+  errLink: '頻出エラー',
   bodySection: '身体的特徴',
   setupSection: 'セッティング',
   simple: '簡易',
@@ -110,6 +116,7 @@ const en: DlStrings = {
   notes: 'Notes',
   close: 'Close',
   exLink: 'Squat',
+  errLink: 'Common errors',
   bodySection: 'Body',
   setupSection: 'Setup',
   simple: 'Simple',

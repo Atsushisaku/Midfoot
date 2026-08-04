@@ -38,7 +38,10 @@
         </div>
       </section>
 
-      <section class="controls">
+      <section class="controls has-errlink">
+        <!-- 頻出エラーのページへ。入力セクションの右上に絶対配置する。
+             文言と表示可否（日本語のときだけ出す）は app.ts が決める -->
+        <a class="cornerbtn ghost link errlink" id="errLink" href="deadlift-errors.html"></a>
         <!--
           挙上は両ペイン共有。図のすぐ下に置く：モバイルでは設定ペインが縦に
           伸びるため、下端に置くと画面外へ出て「動かしながら図を見る」ができなくなる

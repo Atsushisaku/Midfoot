@@ -436,10 +436,18 @@ body {
 /* --- 注記 ---------------------------------------------------------------- */
 
 /* 図の右上に出す。下に出すと操作パネルと上体角度の表示を覆ってしまう */
+/*
+ * 注記パネル。**注記ボタンの真下**（左上）に出す。
+ * 以前は右上（`inset: 16px 16px auto auto`）に出ていたが、これはボタンを左上の
+ * 縦積みへ移す前のレイアウトの名残りで、ボタンと無関係な位置に開くうえ
+ * 右上の言語切替を完全に覆っていた（2026-08-04 修正）。
+ *
+ * top の 116px は .corner の top(14) ＋ ボタン 2 段(42×2) ＋ gap(10) ＋ 逃げ(8)。
+ */
 #notes {
   position: fixed;
-  inset: 16px 16px auto auto;
-  max-width: 460px;
+  inset: 116px auto auto 16px;
+  max-width: min(460px, calc(100vw - 32px));
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -497,7 +505,29 @@ body {
   }
 }
 
-/* --- エラー提示アプリ（error.html だけが使う）------------------------------ */
+/*
+ * 入力セクションの右上に置くエラーページへのリンク（デッドリフト版のみ）。
+ * 絶対配置にしたうえで、下の行にボタンぶんの余白を空けてスライダーと重ならないようにする。
+ */
+.controls.has-errlink {
+  position: relative;
+}
+
+.errlink {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 2;
+  font-size: 14px;
+  min-height: 38px;
+  padding: 7px 14px;
+}
+
+.has-errlink .depth-row {
+  padding-right: 140px;
+}
+
+/* --- エラー提示アプリ（deadlift-errors.html だけが使う）--------------------- */
 
 #errPanel {
   display: flex;

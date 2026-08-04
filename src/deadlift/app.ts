@@ -170,6 +170,7 @@ const notesList = $<HTMLUListElement>('#notesList')
 const notesClose = $<HTMLButtonElement>('#notesClose')
 const langSeg = $<HTMLDivElement>('#lang')
 const exLink = $<HTMLAnchorElement>('#exLink')
+const errLink = $<HTMLAnchorElement>('#errLink')
 
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -512,6 +513,11 @@ function applyLang(): void {
   // 計測のパスが「/」と「/index.html」に割れないようにする
   const base = location.protocol === 'file:' ? 'index.html' : './'
   exLink.href = getLang() === 'ja' ? base : `${base}?lang=${getLang()}`
+
+  // 頻出エラーのページは日本語のみ。英語表示のときは出さない
+  // （英語のラベルで日本語のページへ送るほうが不親切なため）
+  errLink.textContent = s.errLink
+  errLink.hidden = getLang() !== 'ja'
 
   notesList.replaceChildren(
     ...s.notesList.map((html) => {

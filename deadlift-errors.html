@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Midfoot デッドリフトの頻出エラー</title>
+    <script data-goatcounter="https://atsushisaku.goatcounter.com/count"
+            async src="https://gc.zgo.at/count.js"></script>
+  </head>
+  <body>
+    <!--
+      デッドリフトの頻出エラー（要件: docs/error-app-requirements.md）。
+
+      `vite-plugin-singlefile` が 1 エントリしか扱えないので、3 回目のビルドとして
+      `vite.deadlift-errors.config.ts` で dist へ追記する（deadlift.html と同じ事情）。
+
+      **日本語のみ**。デッドリフト版から英語表示で来ても日本語のままになる（未対応）。
+    -->
+    <div id="app">
+      <section class="stage">
+        <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="corner center">
+          <a class="cornerbtn ghost link" href="deadlift.html">デッドリフトに戻る</a>
+        </div>
+      </section>
+
+      <section class="controls">
+        <div class="row sliders depth-row" id="liftRow"></div>
+        <div id="errPanel"></div>
+      </section>
+    </div>
+    <script type="module" src="/src/error/app.ts"></script>
+  </body>
+</html>

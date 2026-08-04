@@ -6,7 +6,7 @@
   "description": "姿勢可視化アプリ（スクワット／デッドリフト）- 姿勢が体格の関数であることを示す",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && vite build --config vite.deadlift.config.ts",
+    "build": "tsc --noEmit && vite build && vite build --config vite.deadlift.config.ts && vite build --config vite.deadlift-errors.config.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
