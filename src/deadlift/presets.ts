@@ -18,6 +18,12 @@ export { BAR_SETTING_Y } from './geometry'
 /** 身体重心スライダーの既定値（Rev.3）。実体は幾何側の定数 */
 export { COM_POS_DEFAULT } from './geometry'
 
+/**
+ * 股関節の屈曲（可動域）の簡易3択。実体は描画側の定数（ソルバ入力ではない）。
+ * 表示名は度をキーに引く（ARM_LEVELS・STANCES と同じ流儀）。
+ */
+export { ROM_LEVELS } from './spine'
+
 /** 表示名はフェーズ B の strings.ts が id をキーに持つ（スクワット版 i18n と同じ流儀） */
 export interface DlPreset {
   readonly id: string
@@ -62,6 +68,8 @@ export const DL_RANGES = {
   arm: { min: 0.8, max: 1.25, step: 0.01 },
   /** スタンス開き角 α（度）。矢状面への射影に使う見なしパラメータ */
   stance: { min: 0, max: 45, step: 1 },
+  /** 股関節屈曲の可動域（度）。3択（ROM_LEVELS）の前後まで振れる幅にしてある */
+  rom: { min: 100, max: 140, step: 1 },
   hipHeight: { min: 0, max: 1, step: 0.01 },
   /** 挙上進行度。スクワット版の depth の後継 */
   lift: { min: 0, max: 1, step: 0.01 },
