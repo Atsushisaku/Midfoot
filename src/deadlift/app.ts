@@ -635,12 +635,15 @@ function draw(now: number): void {
       t: state.lift,
     }
     const pose = solveDlPose(input)
+    // 可動域を超えた前屈は腰椎の丸まりとして描く（ソルバは体幹を剛体のまま解いている）。
+    // 骨盤の三角も同じモデルから出る（脊柱下端の接線が骨盤の「上」）
+    const spine = lumbarSpineOf(pose, { romDeg, stanceDeg })
     bodies.push({
       pose,
       color: i === 0 ? COLORS.bodyA : COLORS.bodyB,
       stanceDeg,
-      // 可動域を超えた前屈は腰椎の丸まりとして描く（ソルバは体幹を剛体のまま解いている）
-      spine: lumbarSpineOf(pose, romDeg, stanceDeg).spine,
+      spine: spine.spine,
+      pelvis: spine.pelvis,
     })
   }
 
