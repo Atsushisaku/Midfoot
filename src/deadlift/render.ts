@@ -191,6 +191,11 @@ export interface SceneBody {
    * 使うので、補間後の生値を別途受け取る（Rev.7）。
    */
   readonly stanceDeg: number
+  /**
+   * 体幹（股→肩）を折れ線で描くための脊柱の点列（`./spine` の `lumbarSpineOf`）。
+   * **省略可**。無ければ従来どおり直線の体幹を描く（エラー例ページはこちらを使う）。
+   */
+  readonly spine?: readonly Vec[]
 }
 
 export interface Scene {
@@ -276,6 +281,7 @@ function drawFigure(
   color: string,
   width: number,
   stanceDeg: number,
+  spine: readonly Vec[] | undefined,
 ): void {
   const P = (v: Vec) => toScreen(cam, v)
   const g = { stroke: color }
@@ -369,23 +375,31 @@ function drawFigure(
   out.push(dot(P(pose.mid), 3.5, color))
 
   // --- 身体のセグメント：関節円の縁から縁まで。輪郭 → 白い中身の2度描きで管にする ---
-  const tube = (a: Vec, b: Vec, ra: number, rb: number, w: number): [Vec, Vec, number] => {
-    const [p, q] = trimSeg(a, b, ra, rb)
-    return [p, q, w]
-  }
-  const segs: [Vec, Vec, number][] = [
+  const tube = (a: Vec, b: Vec, ra: number, rb: number, w: number): [readonly Vec[], number] => [
+    trimSeg(a, b, ra, rb),
+    w,
+  ]
+  /**
+   * 体幹だけは、腰椎の丸みを描くときに直線ではなく折れ線にする。
+   * **端のトリムはしない**。曲線の両端を関節円の半径だけ詰めるには弧長で辿る必要があり、
+   * そこまでする意味がない。あとから描く関節の白抜き円が端を覆うので見た目は同じになる。
+   */
+  const torso: [readonly Vec[], number] = spine
+    ? [spine, width]
+    : tube(pose.hip, pose.shoulder, JOINT_R, JOINT_R, width)
+  const segs: [readonly Vec[], number][] = [
     tube(pose.ankle, pose.knee, ANKLE_R, JOINT_R, width),
     tube(pose.knee, pose.hip, JOINT_R, JOINT_R, width),
     // 上体は肩で止める（DL では肩がバーとの接続点なので明示する）。頭へは首でつなぐ
-    tube(pose.hip, pose.shoulder, JOINT_R, JOINT_R, width),
+    torso,
     tube(pose.shoulder, headModel, JOINT_R, HEAD_R, width * NECK_RATIO),
   ]
-  for (const [a, b, w] of segs) {
-    out.push(path([P(a), P(b)], { ...g, ...cap, 'stroke-width': w }))
+  for (const [pts, w] of segs) {
+    out.push(path(pts.map(P), { ...g, ...cap, 'stroke-width': w }))
   }
-  for (const [a, b, w] of segs) {
+  for (const [pts, w] of segs) {
     out.push(
-      path([P(a), P(b)], {
+      path(pts.map(P), {
         stroke: LIMB_FILL,
         ...cap,
         'stroke-width': Math.max(1, w - 2 * LIMB_WALL),
@@ -501,7 +515,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
   scene.bodies.forEach((body, i) => {
     const cam = cams[i]!
     drawPlate(out, cam, body.pose, body.color)
-    drawFigure(out, cam, body.pose, body.color, 12.5, body.stanceDeg)
+    drawFigure(out, cam, body.pose, body.color, 12.5, body.stanceDeg, body.spine)
     drawFootPlan(out, cam, body.pose, body.stanceDeg, body.color)
     drawWarnings(out, cam, body.pose)
 

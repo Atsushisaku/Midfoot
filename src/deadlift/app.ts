@@ -15,9 +15,11 @@ import {
   DL_PRESETS,
   DL_RANGES,
   FOOT,
+  ROM_LEVELS,
   STANCES,
 } from './presets'
 import { COLORS, renderScene, type Scene, type SceneBody } from './render'
+import { lumbarSpineOf } from './spine'
 import { asLang, getLang, setLang, t, type Lang } from './strings'
 
 /** 補間アニメーションの長さ（スクワット版 §8.1 と同じ） */
@@ -85,6 +87,11 @@ class Tween {
 interface PaneState {
   body: DlBody
   stanceDeg: number
+  /**
+   * 股関節屈曲の可動域（度）。**DlBody には入れない**。ソルバは体幹を剛体として解くので
+   * これは入力にならず、超過分を腰椎の丸まりとして描く**描画側のパラメータ**だから。
+   */
+  romDeg: number
   presetId: string | null
   /** 身体的特徴の表示モード。表示上の状態なので幾何には影響しない */
   bodyMode: 'simple' | 'detail'
@@ -103,6 +110,8 @@ const defaultPane = (): PaneState => ({
   body: { ...DEFAULT_DL_PRESET.body },
   // 既定は α=0（ナロー）。仕様 §4 の検算表が基準にしている状態と初期表示をそろえる
   stanceDeg: 0,
+  // 既定は 3 択の真ん中（標準）。腕の 1.0 と同じで、初期表示が代表値になるようにする
+  romDeg: 120,
   presetId: DEFAULT_DL_PRESET.id,
   bodyMode: 'simple',
   setupMode: 'simple',
@@ -120,6 +129,7 @@ interface PaneTweens {
   mTorso: Tween
   mArm: Tween
   stanceDeg: Tween
+  romDeg: Tween
 }
 
 const makeTweens = (s: PaneState): PaneTweens => ({
@@ -128,6 +138,7 @@ const makeTweens = (s: PaneState): PaneTweens => ({
   mTorso: new Tween(s.body.mTorso),
   mArm: new Tween(s.body.mArm),
   stanceDeg: new Tween(s.stanceDeg),
+  romDeg: new Tween(s.romDeg),
 })
 
 const tweens: [PaneTweens, PaneTweens] = [makeTweens(state.panes[0]), makeTweens(state.panes[1])]
@@ -142,11 +153,15 @@ function pushBody(i: 0 | 1, dur: number, now = performance.now()): void {
   tw.mArm.set(s.body.mArm, dur, now)
 }
 
-/** スタンス・腰の高さ・身体重心も含めてペイン全体を tween に反映する（比較開始時のコピー用） */
+/**
+ * スタンス・可動域・腰の高さ・身体重心も含めてペイン全体を tween に反映する
+ * （比較開始時のコピー用）。可動域は body ではなくペインの状態なのでこちらに置く
+ */
 function pushPane(i: 0 | 1, dur: number, now = performance.now()): void {
   const s = state.panes[i]
   const tw = tweens[i]
   tw.stanceDeg.set(s.stanceDeg, dur, now)
+  tw.romDeg.set(s.romDeg, dur, now)
   pushBody(i, dur, now)
 }
 
@@ -227,6 +242,7 @@ interface PaneUI {
   modeSeg: HTMLDivElement
   presetSeg: HTMLDivElement
   armSeg: HTMLDivElement
+  romSeg: HTMLDivElement
   stanceSeg: HTMLDivElement
   simpleRow: HTMLDivElement
   slidersRow: HTMLDivElement
@@ -320,14 +336,28 @@ function buildPane(i: 0 | 1): PaneUI {
       requestFrame()
     })
 
+  // 股関節の可動域も体型プリセットから独立した軸（腕と同じ）。簡易では3択、詳細ではスライダー。
+  // ソルバには渡さず、超過分を腰椎の丸まりとして描くのに使う
+  const romSeg = buildSeg('presets', t().aria.romLevel,
+    ROM_LEVELS.map((d) => ({ v: String(d), label: t().romLevels[d] ?? String(d) })),
+    (v) => {
+      s.romDeg = Number(v)
+      tweens[i].romDeg.set(s.romDeg, DUR, performance.now())
+      sync()
+      requestFrame()
+    })
+
   const head = el('div', 'row row-buttons')
   head.append(el('span', 'section-label', t().bodySection), modeSeg)
 
   const armLabeled = el('div', 'labeled-seg')
   armLabeled.append(el('span', 'seg-label', t().arm), armSeg)
 
+  const romLabeled = el('div', 'labeled-seg')
+  romLabeled.append(el('span', 'seg-label', t().rom), romSeg)
+
   const simpleRow = el('div', 'row row-buttons')
-  simpleRow.append(presetSeg, armLabeled)
+  simpleRow.append(presetSeg, armLabeled, romLabeled)
 
   const slidersRow = el('div', 'row sliders')
   slidersRow.hidden = true
@@ -343,6 +373,17 @@ function buildPane(i: 0 | 1): PaneUI {
     })
     inputs.set(spec.key, input)
   }
+  // 可動域は DlBody に持たないので PANE_SLIDERS には載せられない。腕と同じく
+  // 体型プリセットとは別軸なので、動かしてもプリセットの選択は外さない
+  inputs.set(
+    'rom',
+    buildSlider(slidersRow, t().romDeg, DL_RANGES.rom, s.romDeg, (v) => {
+      s.romDeg = v
+      tweens[i].romDeg.set(v, 0, performance.now())
+      sync()
+      requestFrame()
+    }),
+  )
 
   const bodySection = el('div', 'body-section')
   bodySection.append(head, simpleRow, slidersRow)
@@ -401,6 +442,7 @@ function buildPane(i: 0 | 1): PaneUI {
     modeSeg,
     presetSeg,
     armSeg,
+    romSeg,
     stanceSeg,
     simpleRow,
     slidersRow,
@@ -490,6 +532,7 @@ function sync(): void {
     press(ui.presetSeg, s.presetId)
     // 3択のどれとも一致しない値（詳細スライダーで設定）のときは、どれも点灯しない
     press(ui.armSeg, String(s.body.mArm))
+    press(ui.romSeg, String(s.romDeg))
     press(ui.stanceSeg, String(s.stanceDeg))
     press(ui.modeSeg, s.bodyMode)
     ui.simpleRow.hidden = s.bodyMode !== 'simple'
@@ -503,6 +546,8 @@ function sync(): void {
     }
     const stanceInput = ui.inputs.get('stance')
     if (stanceInput) stanceInput.value = String(s.stanceDeg)
+    const romInput = ui.inputs.get('rom')
+    if (romInput) romInput.value = String(s.romDeg)
   }
   panes[1].root.hidden = !state.comparing
   compareBtn.setAttribute('aria-pressed', String(state.comparing))
@@ -571,6 +616,7 @@ function draw(now: number): void {
     // 描画側もスタンスの生値を使う（つま先の向き・腕の前後。Rev.7）ので、
     // ソルバに渡す値と同じ 1 回の読み取りを共有する
     const stanceDeg = tw.stanceDeg.read(now)
+    const romDeg = tw.romDeg.read(now)
     const input: DlPoseInput = {
       body: {
         mShank: tw.mShank.read(now),
@@ -588,10 +634,13 @@ function draw(now: number): void {
       hipHeight: 0.5,
       t: state.lift,
     }
+    const pose = solveDlPose(input)
     bodies.push({
-      pose: solveDlPose(input),
+      pose,
       color: i === 0 ? COLORS.bodyA : COLORS.bodyB,
       stanceDeg,
+      // 可動域を超えた前屈は腰椎の丸まりとして描く（ソルバは体幹を剛体のまま解いている）
+      spine: lumbarSpineOf(pose, romDeg, stanceDeg).spine,
     })
   }
 
