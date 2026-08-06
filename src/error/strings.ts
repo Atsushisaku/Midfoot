@@ -22,9 +22,19 @@ export interface ErrStrings {
   readonly crumb: string
   /** 行見出し */
   readonly bodyRow: string
+  /**
+   * 体格の行の見出し（2026-08-07 以降はこちらを使う）。
+   * 「体格」だと 4 つ目の「股関節の屈曲」まで含めた総称にならないので、
+   * **両者に共通の条件**であることだけを言う見出しにした。`bodyRow` は未使用だが残す。
+   */
+  readonly sharedRow: string
   readonly errorRow: string
   readonly detailRow: string
+  /** 体格の行の小見出し（体型／腕／股関節の屈曲／スタンス） */
+  readonly buildLabel: string
   readonly armLabel: string
+  readonly romLabel: string
+  readonly stanceLabel: string
   readonly levelLabel: string
   /** 共有の操作 */
   readonly time: string
@@ -39,6 +49,8 @@ export interface ErrStrings {
   readonly presets: Record<string, string>
   readonly armLevels: Record<string, string>
   readonly stances: Record<string, string>
+  /** 股関節屈曲の可動域 3 択（`../deadlift/spine` の ROM_LEVELS をキーに引く） */
+  readonly romLevels: Record<string, string>
   /** カタログ（id をキーに引く） */
   readonly errors: Record<string, { readonly label: string; readonly what: Comment }>
   /**
@@ -54,6 +66,7 @@ export interface ErrStrings {
     readonly bodyPreset: string
     readonly armLevel: string
     readonly stance: string
+    readonly rom: string
     readonly error: string
     readonly level: string
   }
@@ -65,9 +78,13 @@ const ja: ErrStrings = {
   navDeadlift: 'デッドリフト',
   crumb: 'エラー例',
   bodyRow: '体格（両者共通）',
+  sharedRow: '両者共通',
   errorRow: 'エラー',
   detailRow: '詳細',
+  buildLabel: '体型',
   armLabel: '腕',
+  romLabel: '股関節の屈曲',
+  stanceLabel: 'スタンス',
   levelLabel: '程度',
   time: '時間',
   play: '▶ 再生',
@@ -82,6 +99,7 @@ const ja: ErrStrings = {
   presets: { standard: '標準', 'long-femur': '大腿が長い', 'long-torso': '体幹が長い' },
   armLevels: { 0.9: '短い', 1: '標準', 1.1: '長い' },
   stances: { 0: 'ナロー', 12: 'ミドル', 35: 'スモウ' },
+  romLevels: { 110: '硬め', 120: '標準', 130: '柔らかめ' },
   errors: {
     hipShoot: {
       label: 'ぶっこ抜き',
@@ -107,6 +125,17 @@ const ja: ErrStrings = {
         '離れただけ、腰と股関節の負担が増える',
       ],
     },
+    // 名称は解剖学的に正確な「腰椎の屈曲」を採用（常時描画の胸椎の丸み＝正常と
+    // 混同させないため、下背部に限定した名前にする）。詳細は現象だけを書く規約
+    // （要件 §7.3）のまま、3 点目で描画の時間変化まで言う（2026-08-07 確定）
+    roundBack: {
+      label: '腰椎の屈曲',
+      what: [
+        'バーの通り道も腰の高さも模範と同じで、腰の丸まりだけが違う',
+        '骨盤が起きた（後傾した）まま前屈するので、丸まりは腰に集中する',
+        '構えでは軽く、バーが膝を過ぎるあたりで最も丸まり、立ち切るとまっすぐに戻る',
+      ],
+    },
   },
   legLead: (barPct) => `バーが ${barPct} 上がった時点で、脚は`,
   legTail: '伸びている',
@@ -117,6 +146,7 @@ const ja: ErrStrings = {
     bodyPreset: '体型プリセット',
     armLevel: '腕の長さ',
     stance: 'スタンス',
+    rom: '股関節の屈曲',
     error: 'エラー',
     level: 'エラーの程度',
   },
@@ -128,9 +158,13 @@ const en: ErrStrings = {
   navDeadlift: 'Deadlift',
   crumb: 'Error examples',
   bodyRow: 'Proportions (shared)',
+  sharedRow: 'Shared',
   errorRow: 'Error',
   detailRow: 'Detail',
+  buildLabel: 'Build',
   armLabel: 'Arms',
+  romLabel: 'Hip flexion',
+  stanceLabel: 'Stance',
   levelLabel: 'Severity',
   time: 'Time',
   play: '▶ Play',
@@ -145,6 +179,7 @@ const en: ErrStrings = {
   presets: { standard: 'Standard', 'long-femur': 'Long femur', 'long-torso': 'Long torso' },
   armLevels: { 0.9: 'Short', 1: 'Standard', 1.1: 'Long' },
   stances: { 0: 'Narrow', 12: 'Middle', 35: 'Sumo' },
+  romLevels: { 110: 'Stiff', 120: 'Average', 130: 'Flexible' },
   errors: {
     hipShoot: {
       label: 'Hips shoot up',
@@ -170,6 +205,14 @@ const en: ErrStrings = {
         'The load on the lower back and hips grows by exactly that distance',
       ],
     },
+    roundBack: {
+      label: 'Lumbar flexion',
+      what: [
+        'The bar path and the hip height match the reference; only the rounding of the lower back differs',
+        'The pelvis stays tucked under (posteriorly tilted) through the hinge, so the rounding is concentrated in the lower back',
+        'It is slight at the setup, peaks as the bar passes the knees, and straightens out at lockout',
+      ],
+    },
   },
   legLead: (barPct) => `With the bar ${barPct} of the way up, the legs are`,
   legTail: 'extended',
@@ -180,6 +223,7 @@ const en: ErrStrings = {
     bodyPreset: 'Body type preset',
     armLevel: 'Arm length',
     stance: 'Stance',
+    rom: 'Hip flexion',
     error: 'Error',
     level: 'Severity',
   },

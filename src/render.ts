@@ -7,6 +7,7 @@
  */
 
 import { DEG, K_PIVOT, type Pose, type Vec } from './geometry'
+import type { Pelvis } from './pelvis'
 // このファイルは上体角ラジアンを t という局所変数で使うので、別名で受ける
 import { t as tr } from './i18n'
 
@@ -167,6 +168,11 @@ export interface SceneBody {
   readonly color: string
   /** 固定した体は薄く描く（§8.5） */
   readonly faded: boolean
+  /**
+   * 骨盤の三角（`./pelvis` の `pelvisOf`）。**省略可**。
+   * 無ければ従来どおり股関節の白抜き円だけを描く。立位ゴーストには渡さない。
+   */
+  readonly pelvis?: Pelvis
 }
 
 export interface Scene {
@@ -183,7 +189,15 @@ function drawFigure(
   cam: Cam,
   pose: Pose,
   color: string,
-  opts: { width: number; opacity: number; joints: boolean; foot: boolean; tube: boolean },
+  opts: {
+    width: number
+    opacity: number
+    joints: boolean
+    foot: boolean
+    tube: boolean
+    /** 骨盤の三角。undefined なら従来どおり股関節の白抜き円を描く */
+    pelvis: Pelvis | undefined
+  },
 ): void {
   const P = (v: Vec) => toScreen(cam, v)
   const g = { stroke: color, opacity: opts.opacity }
@@ -326,12 +340,22 @@ function drawFigure(
     out.push(dot(P(pose.mid), 3.5, color))
   }
 
+  /**
+   * 股関節側の詰め量。
+   *
+   * 既定は関節円の半径ぶん詰める（円の縁で管を止める作法）。しかし骨盤三角を出すときは
+   * 股関節の白抜き円を描かないので、詰めたままだと**大腿と上体の管の端（丸い蓋の輪郭）が
+   * 三角の中に露出して、脚と上体の切れ目に見えてしまう**。三角は管より後に描くので、
+   * 端を股関節の中心まで伸ばして三角の白い塗りの下へ潜り込ませる。
+   */
+  const hipTrim = opts.pelvis ? 0 : JOINT_R
+
   // セグメント：関節円の縁から縁まで。輪郭 → 白い中身の2度描きで管にする
   const segs: [Vec, Vec, number, number][] = [
     [pose.ankle, pose.knee, ANKLE_R, JOINT_R],
-    [pose.knee, pose.hip, JOINT_R, JOINT_R],
+    [pose.knee, pose.hip, JOINT_R, hipTrim],
     // 上体は肩で止めず頭まで1本。肩の位置はバーの円が示す
-    [pose.hip, headModel, JOINT_R, HEAD_R],
+    [pose.hip, headModel, hipTrim, HEAD_R],
   ]
   const trimmed = segs.map(([a, b, ra, rb]) => trimSeg(a, b, ra, rb))
   for (const [a, b] of trimmed) {
@@ -348,13 +372,36 @@ function drawFigure(
     )
   }
 
-  // 関節の白抜き円（§7：解剖を知らない人に股関節の位置を示すため必須）
+  // 骨盤三角（デッドリフト版・エラー例ページと同じ見た目）。
+  // 体幹チューブの後・関節円の前に置く。塗りは他の部位と同じ白抜きなので、
+  // 管より後に描けば白い塗りが管の輪郭（丸い蓋）を隠して三角が前面に出る。
+  if (opts.pelvis) {
+    const { psis, asis, ischium } = opts.pelvis
+    out.push(
+      path([P(psis), P(asis), P(ischium), P(psis)], {
+        fill: LIMB_FILL,
+        'fill-opacity': opts.opacity,
+        ...g,
+        'stroke-width': LIMB_WALL,
+        'stroke-linejoin': 'round',
+      }),
+    )
+  }
+
+  // 関節の白抜き円（§7：解剖を知らない人に股関節の位置を示すため必須）。
+  // 骨盤三角を出すときは股関節の円を**描かない**（三角が股関節の位置を兼ねる）
   if (opts.joints) {
-    for (const [c, r] of [
-      [pose.ankle, ANKLE_R],
-      [pose.knee, JOINT_R],
-      [pose.hip, JOINT_R],
-    ] as const) {
+    const joints: readonly (readonly [Vec, number])[] = opts.pelvis
+      ? [
+          [pose.ankle, ANKLE_R],
+          [pose.knee, JOINT_R],
+        ]
+      : [
+          [pose.ankle, ANKLE_R],
+          [pose.knee, JOINT_R],
+          [pose.hip, JOINT_R],
+        ]
+    for (const [c, r] of joints) {
       const p = P(c)
       out.push(
         el('circle', {
@@ -468,6 +515,8 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
         joints: false,
         foot: false,
         tube: false,
+        // ゴーストは簡素な線画のまま。骨盤まで描くと図がうるさくなる
+        pelvis: undefined,
       })
     }
 
@@ -512,6 +561,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
       joints: true,
       foot: true,
       tube: true,
+      pelvis: body.pelvis,
     })
 
     if (!faded) drawWarnings(out, cam, body.pose)

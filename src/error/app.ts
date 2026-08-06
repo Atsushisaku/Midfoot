@@ -4,13 +4,17 @@
  *
  * 左＝最適フォーム、右＝エラーフォーム。**同一人物**なので体格・スタンスは共有する。
  *
- * UI は**カタログ（エラー名）＋ 程度（軽／中／重）だけ**。逸脱パラメータの
+ * UI は**カタログ（エラー名）＋ 程度（軽／中／重）＋ 体格の行だけ**。逸脱パラメータの
  * スライダーは出さない。インストラクターが指すのは「現象」であって、
  * バー位置や腰の先行度といった内部表現ではないため（要件 §7.3）。
  *
- * 数値も**主指標（脚の伸展の使用率）1 本だけ**にしてある。最適とエラーの梃子を並べた表は
- * 「特に何の分析にもならない」ため撤去した（要件 §12.4）。`./metrics` の梃子まわりは
- * モデル層として残してあるが、この画面からは呼んでいない。
+ * **数値の readout は置かない**（2026-08-07 の UI 整理）。主指標（脚の伸展の使用率）も
+ * 脊柱まわりの数値も撤去し、図だけを見せる。最適とエラーの梃子を並べた表は
+ * 「特に何の分析にもならない」ため撤去済み（要件 §12.4）。`./metrics` の梃子まわりは
+ * モデル層として残っており、経路B（`./kappa`）が使っている。
+ *
+ * 骨盤と脊柱は `../deadlift/spine` の `lumbarSpineOf` で出す。可動域由来（κ_A）に加えて
+ * エラー由来の丸まり（経路B、`./kappa`）をこのページだけ上乗せする。
  *
  * 描画と幾何は `../deadlift/` のものをそのまま使う。
  * 日英対応。URL 共有は持たないが、デッドリフト版が付ける `?lang=` だけは読む
@@ -24,8 +28,9 @@ import { COLORS, renderScene, type Scene } from '../deadlift/render'
 // 図の中の文言（「背角（水平から）」など）は render.ts が deadlift 側の strings から引くので、
 // こちらの言語切替に合わせて**あちらの言語も揃える**必要がある
 import { setLang as setFigureLang } from '../deadlift/strings'
+import { ROM_LEVELS, lumbarSpineOf, type SpineOptions } from '../deadlift/spine'
 import { CATALOG, NO_DEVIATION, type Deviation, type Level } from './catalog'
-import { legExtensionUsed } from './metrics'
+import { errorKappaOf, fadedKappaAddDeg } from './kappa'
 import { asLang, getLang, setLang, t, type Lang } from './strings'
 import '../style.css'
 
@@ -37,7 +42,15 @@ const state = {
   /** null ＝ エラーなし */
   errorId: null as string | null,
   level: 1 as Level,
+  /** 股関節屈曲の可動域（度）。ROM_LEVELS の 3 択。両者共通（同一人物なので） */
+  romDeg: 120,
 }
+
+/**
+ * 曲げの誇張倍率（2026-08-07 の UI 整理で確定）。実寸のままだと弓なりが浅くて
+ * 読めず、×2 は大げさなので、その中間に置いた**表示上の倍率**。
+ */
+const EXAGGERATE = 1.5
 
 const currentEntry = () => CATALOG.find((e) => e.id === state.errorId) ?? null
 const currentDev = (): Deviation => currentEntry()?.levels[state.level] ?? NO_DEVIATION
@@ -68,11 +81,15 @@ function poseAt(lift: number, dev: Deviation): DlPose {
 }
 
 /**
- * 脚の伸展の使用率（要件 §11.1）。物差しは**両者とも最適フォームの可動範囲**で取る。
- * エラー側の範囲で正規化すると、深く構えるエラーは範囲ごと広がって差が消える。
+ * 骨盤・脊柱モデルの入力。可動域まわりは両者で共有する（同一人物なので）。
+ * 違うのは `kappaExtraDeg`（経路B の置き κ）だけで、最適側は常に 0。
  */
-const legUsed = (dev: Deviation, lift: number): number =>
-  legExtensionUsed(poseAt(0, NO_DEVIATION), poseAt(1, NO_DEVIATION), poseAt(lift, dev))
+const spineOpts = (kappaExtraDeg = 0): SpineOptions => ({
+  romDeg: state.romDeg,
+  stanceDeg: state.stanceDeg,
+  exaggerate: EXAGGERATE,
+  kappaExtraDeg,
+})
 
 // ---------------------------------------------------------------------------
 // DOM
@@ -210,7 +227,12 @@ liftRow.append(playBtn, liftBox)
 
 const bodyRow = el('div', 'row')
 const bodyRowLabel = el('strong', 'rowlabel')
+// 4 つのセグそれぞれに小見出しを付ける（体型／腕／股関節の屈曲／スタンス）。
+// 行見出しは「両者共通」で、この行が**両者に共通の条件**であることだけを言う
+const presetRowLabel = el('span', 'rowsub')
 const armRowLabel = el('span', 'rowsub')
+const romRowLabel = el('span', 'rowsub')
+const stanceRowLabel = el('span', 'rowsub')
 const presetSeg = buildSeg(
   DL_PRESETS.map((p) => p.id),
   (v) => t().presets[v] ?? v,
@@ -238,7 +260,31 @@ const stanceSeg = buildSeg(
   },
   () => t().aria.stance,
 )
-bodyRow.append(bodyRowLabel, presetSeg.seg, armRowLabel, armSeg.seg, stanceSeg.seg)
+/**
+ * 股関節の屈曲（可動域）の 3 択。κ_A = 見かけの股屈曲 − ROM なので、ここを動かすと
+ * **姿勢はそのままで腰の丸まりだけ**が増減する。丸まりやすさが体格・柔軟性の関数だ、
+ * という Midfoot の主題そのものなので、体格の行に置く。
+ */
+const romSeg = buildSeg(
+  ROM_LEVELS.map(String),
+  (v) => t().romLevels[v] ?? v,
+  (v) => Number(v) === state.romDeg,
+  (v) => {
+    state.romDeg = Number(v)
+  },
+  () => t().aria.rom,
+)
+bodyRow.append(
+  bodyRowLabel,
+  presetRowLabel,
+  presetSeg.seg,
+  armRowLabel,
+  armSeg.seg,
+  romRowLabel,
+  romSeg.seg,
+  stanceRowLabel,
+  stanceSeg.seg,
+)
 
 // --- エラー（カタログ ＋ 程度）------------------------------------------------
 
@@ -273,52 +319,45 @@ const whatRowLabel = el('strong', 'rowlabel')
 const whatList = el('ul', 'whatlist')
 whatRow.append(whatRowLabel, whatList)
 
-const legBox = el('div', 'legbox')
-panel.append(bodyRow, errRow, whatRow, legBox)
+panel.append(bodyRow, errRow, whatRow)
 
 // ---------------------------------------------------------------------------
 // 描画
 // ---------------------------------------------------------------------------
 
-/**
- * 主指標（要件 §11.1）。「バーの進み」に対して「脚をどこまで伸ばしたか」。
- * ぶっこ抜きは先食い、上体の立てすぎは遅れ、と 1 本で逆向きに出る。
- *
- * エラー未選択でも**空にしない**。空にすると高さが変わって図が動くし、
- * 模範だけの値にも意味がある（要件 §13）。
- */
-function renderLeg(hasError: boolean): void {
-  const s = t()
-  const now = state.lift
-  const o = legUsed(NO_DEVIATION, now)
-  const pct = (v: number) => `${Math.round(v * 100)}%`
-  const head = el('span', 'leglabel', s.legLead(pct(now)))
-
-  if (!hasError) {
-    legBox.replaceChildren(head, el('span', 'legnum opt', pct(o)), el('span', 'leglabel', s.legTail))
-    return
-  }
-  const e = legUsed(currentDev(), now)
-  const gap = e - o
-  const errNum = el('span', 'legnum err', pct(e))
-  if (Math.abs(gap) > 0.08) errNum.classList.add('bad')
-  legBox.replaceChildren(
-    head,
-    el('span', 'legnum opt', pct(o)),
-    el('span', 'legsep', '／'),
-    errNum,
-    el('span', 'leglabel', gap > 0.08 ? s.legEarly : gap < -0.08 ? s.legLate : s.legTail),
-  )
-}
+// 主指標（脚の伸展の使用率）の readout は 2026-08-07 の UI 整理で撤去した。
+// モデル（`./metrics` の `legExtensionUsed`）と文言（`./strings` の legLead など）は
+// 残っているので、戻すときは git 履歴の renderLeg を復元すればよい。
 
 function render(): void {
+  const entry = currentEntry()
   const opt = poseAt(state.lift, NO_DEVIATION)
   const err = poseAt(state.lift, currentDev())
+  // 経路B は「同じ t の最適フォームからの超過」なので、ref には opt をそのまま渡す。
+  // 置き κ（腰椎の屈曲）だけは姿勢に紐づかないので、自前でフェードさせて足す
+  const kb = errorKappaOf(err, opt, state.lift)
+  const kappaExtra = entry
+    ? kb.hamDeg + kb.loadDeg + fadedKappaAddDeg(entry.kappaAddDeg[state.level]!, state.lift)
+    : 0
+  const optSpine = lumbarSpineOf(opt, spineOpts())
+  const errSpine = lumbarSpineOf(err, spineOpts(kappaExtra))
   const scene: Scene = {
     layout: 'side',
     bodies: [
-      { pose: opt, color: COLORS.bodyA, stanceDeg: state.stanceDeg },
-      { pose: err, color: COLORS.bodyB, stanceDeg: state.stanceDeg },
+      {
+        pose: opt,
+        color: COLORS.bodyA,
+        stanceDeg: state.stanceDeg,
+        spine: optSpine.spine,
+        pelvis: optSpine.pelvis,
+      },
+      {
+        pose: err,
+        color: COLORS.bodyB,
+        stanceDeg: state.stanceDeg,
+        spine: errSpine.spine,
+        pelvis: errSpine.pelvis,
+      },
     ],
   }
   renderScene(svg, scene)
@@ -326,16 +365,15 @@ function render(): void {
   // 要素は消さない。消すと下の段の高さが変わって**図まで動く**ので、
   // 説明も指標も常に置いたままにして中身だけ差し替える（要件 §13）。
   // 程度は選べないだけにして、場所は残す。
-  const entry = currentEntry()
   const comment = entry ? (t().errors[entry.id]?.what ?? t().noneComment) : t().noneComment
   whatList.replaceChildren(...comment.map((line) => el('li', '', line)))
   whatRow.classList.toggle('muted', entry === null)
   levelSeg.seg.classList.toggle('is-off', entry === null)
   levelLabel.classList.toggle('is-off', entry === null)
-  renderLeg(entry !== null)
 
   presetSeg.sync()
   armSeg.sync()
+  romSeg.sync()
   stanceSeg.sync()
   errSeg.sync()
   levelSeg.sync()
@@ -355,8 +393,11 @@ function applyLang(): void {
   applyNav('deadlift', { squat: s.navSquat, deadlift: s.navDeadlift })
   crumb.textContent = s.crumb
   crumb.hidden = false
-  bodyRowLabel.textContent = s.bodyRow
+  bodyRowLabel.textContent = s.sharedRow
+  presetRowLabel.textContent = s.buildLabel
   armRowLabel.textContent = s.armLabel
+  romRowLabel.textContent = s.romLabel
+  stanceRowLabel.textContent = s.stanceLabel
   errRowLabel.textContent = s.errorRow
   levelLabel.textContent = s.levelLabel
   whatRowLabel.textContent = s.detailRow

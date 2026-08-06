@@ -11,6 +11,7 @@
  */
 
 import { DEG, type Vec } from '../geometry'
+import type { Pelvis } from '../pelvis'
 import type { DlPose } from './geometry'
 // このファイルは上体角ラジアンを局所変数で使うので、文言は別名で受ける
 import { t as tr } from './strings'
@@ -193,9 +194,14 @@ export interface SceneBody {
   readonly stanceDeg: number
   /**
    * 体幹（股→肩）を折れ線で描くための脊柱の点列（`./spine` の `lumbarSpineOf`）。
-   * **省略可**。無ければ従来どおり直線の体幹を描く（エラー例ページはこちらを使う）。
+   * **省略可**。無ければ従来どおり直線の体幹を描く。
    */
   readonly spine?: readonly Vec[]
+  /**
+   * 骨盤の三角（`../pelvis` の `pelvisOf`）。**省略可**。
+   * 無ければ従来どおり股関節の白抜き円だけを描く。
+   */
+  readonly pelvis?: Pelvis
 }
 
 export interface Scene {
@@ -282,6 +288,7 @@ function drawFigure(
   width: number,
   stanceDeg: number,
   spine: readonly Vec[] | undefined,
+  pelvis: Pelvis | undefined,
 ): void {
   const P = (v: Vec) => toScreen(cam, v)
   const g = { stroke: color }
@@ -380,16 +387,26 @@ function drawFigure(
     w,
   ]
   /**
+   * 股関節側の詰め量。
+   *
+   * 既定は関節円の半径ぶん詰める（円の縁で管を止める作法）。しかし骨盤三角を出すときは
+   * 股関節の白抜き円を描かないので、詰めたままだと**大腿の管の端（丸い蓋の輪郭）が
+   * 三角の中に露出して、脚と上体の切れ目に見えてしまう**。三角は管より後に描くので、
+   * 端を股関節の中心まで伸ばして三角の白い塗りの下へ潜り込ませる。
+   */
+  const hipTrim = pelvis ? 0 : JOINT_R
+  /**
    * 体幹だけは、腰椎の丸みを描くときに直線ではなく折れ線にする。
    * **端のトリムはしない**。曲線の両端を関節円の半径だけ詰めるには弧長で辿る必要があり、
-   * そこまでする意味がない。あとから描く関節の白抜き円が端を覆うので見た目は同じになる。
+   * そこまでする意味がない。あとから描く関節の白抜き円（と骨盤三角）が端を覆うので
+   * 見た目は同じになる。
    */
   const torso: [readonly Vec[], number] = spine
     ? [spine, width]
-    : tube(pose.hip, pose.shoulder, JOINT_R, JOINT_R, width)
+    : tube(pose.hip, pose.shoulder, hipTrim, JOINT_R, width)
   const segs: [readonly Vec[], number][] = [
     tube(pose.ankle, pose.knee, ANKLE_R, JOINT_R, width),
-    tube(pose.knee, pose.hip, JOINT_R, JOINT_R, width),
+    tube(pose.knee, pose.hip, JOINT_R, hipTrim, width),
     // 上体は肩で止める（DL では肩がバーとの接続点なので明示する）。頭へは首でつなぐ
     torso,
     tube(pose.shoulder, headModel, JOINT_R, HEAD_R, width * NECK_RATIO),
@@ -407,13 +424,36 @@ function drawFigure(
     )
   }
 
+  // --- 骨盤三角 ---
+  // 体幹チューブの後・関節円の前に置く。塗りは**他の部位と同じ白抜き**なので、
+  // 管より後に描けば白い塗りが管の輪郭（丸い蓋）を隠して三角が前面に出る。
+  if (pelvis) {
+    out.push(
+      path([P(pelvis.psis), P(pelvis.asis), P(pelvis.ischium), P(pelvis.psis)], {
+        fill: LIMB_FILL,
+        ...g,
+        'stroke-width': LIMB_WALL,
+        'stroke-linejoin': 'round',
+      }),
+    )
+  }
+
   // --- 関節の白抜き円（解剖を知らない人に股関節・肩の位置を示すため必須）---
-  for (const [c, r] of [
-    [pose.ankle, ANKLE_R],
-    [pose.knee, JOINT_R],
-    [pose.hip, JOINT_R],
-    [pose.shoulder, JOINT_R],
-  ] as const) {
+  // 骨盤三角を出すときは股関節の円を**描かない**。三角が股関節の位置を兼ね、
+  // 円を重ねるとかえってうるさいため（2026-08-07 確定）。
+  const joints: readonly (readonly [Vec, number])[] = pelvis
+    ? [
+        [pose.ankle, ANKLE_R],
+        [pose.knee, JOINT_R],
+        [pose.shoulder, JOINT_R],
+      ]
+    : [
+        [pose.ankle, ANKLE_R],
+        [pose.knee, JOINT_R],
+        [pose.hip, JOINT_R],
+        [pose.shoulder, JOINT_R],
+      ]
+  for (const [c, r] of joints) {
     const p = P(c)
     out.push(
       el('circle', { cx: p.x, cy: p.y, r: r * cam.s, fill: LIMB_FILL, ...g, 'stroke-width': LIMB_WALL }),
@@ -515,7 +555,7 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
   scene.bodies.forEach((body, i) => {
     const cam = cams[i]!
     drawPlate(out, cam, body.pose, body.color)
-    drawFigure(out, cam, body.pose, body.color, 12.5, body.stanceDeg, body.spine)
+    drawFigure(out, cam, body.pose, body.color, 12.5, body.stanceDeg, body.spine, body.pelvis)
     drawFootPlan(out, cam, body.pose, body.stanceDeg, body.color)
     drawWarnings(out, cam, body.pose)
 

@@ -54,11 +54,19 @@ export interface ErrorEntry {
   readonly id: string
   /** 軽度／中等度／重度 */
   readonly levels: readonly [Deviation, Deviation, Deviation]
+  /**
+   * 置きの腰椎屈曲（度）。「腰椎の屈曲」だけが持ち、他エラーは 0。
+   *
+   * 力の問題（ブレーシングが負ける）で幾何からは出せないので、そう見えるように置いた値。
+   * 他の 3 項目の丸まりは姿勢から出る（可動域由来の κ_A ＋ `./kappa` の経路B）。
+   */
+  readonly kappaAddDeg: readonly [number, number, number]
 }
 
 export const CATALOG: readonly ErrorEntry[] = [
   {
     id: 'hipShoot',
+    kappaAddDeg: [0, 0, 0],
     levels: [
       { barOffsetCm: 1.5, hipLead: 0.35, hipDelta: 0.15, kneeAheadExtraCm: 0 },
       { barOffsetCm: 3, hipLead: 0.6, hipDelta: 0.3, kneeAheadExtraCm: 0 },
@@ -67,6 +75,7 @@ export const CATALOG: readonly ErrorEntry[] = [
   },
   {
     id: 'upright',
+    kappaAddDeg: [0, 0, 0],
     // ぶっこ抜きと対称に「構え（hipDelta）＋動作中（hipLead）」の 2 成分で持つ。
     // hipDelta だけだと膝の前後は 1.9cm しか動かず、程度の差がほとんど出なかった。
     levels: [
@@ -84,10 +93,24 @@ export const CATALOG: readonly ErrorEntry[] = [
   },
   {
     id: 'barFar',
+    kappaAddDeg: [0, 0, 0],
     levels: [
       { barOffsetCm: 2, hipLead: 0, hipDelta: 0, kneeAheadExtraCm: 0 },
       { barOffsetCm: 5, hipLead: 0, hipDelta: 0, kneeAheadExtraCm: 0 },
       { barOffsetCm: 8, hipLead: 0, hipDelta: 0, kneeAheadExtraCm: 0 },
     ],
+  },
+  {
+    id: 'roundBack',
+    /**
+     * **逸脱パラメータはすべてゼロ**。バーの位置も腰の高さも腰の先行もいじらないので、
+     * 姿勢（足首・膝・股・肩・バー）は模範と完全に同一になり、違うのは脊柱の丸みだけ。
+     *
+     * 「他は模範どおりなのに背中だけ丸い」＝ブレーシングの失敗を表したいので、これでよい。
+     * 姿勢に現れない（バー位置にも腰の高さにも出ない）ことが、このエラーの見落としやすさ
+     * そのものでもある。
+     */
+    levels: [NO_DEVIATION, NO_DEVIATION, NO_DEVIATION],
+    kappaAddDeg: [8, 16, 24],
   },
 ]
