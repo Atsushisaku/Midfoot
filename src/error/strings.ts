@@ -16,10 +16,17 @@ export type Comment = readonly [string, string, string]
 
 export interface ErrStrings {
   readonly title: string
-  /** 種目ナビの文言。エラー例はデッドリフトの下位なので crumb を足す */
+  /** 種目ナビの文言 */
   readonly navSquat: string
   readonly navDeadlift: string
-  readonly crumb: string
+  /**
+   * 図の左下の 2 つのボタン（2026-08-07）。どちらも「何を並べるか」を表す。
+   * デッドリフト版と同じ語を使う（あちらは `compare` / `errLink`）。
+   * このページでは体格比較は**左右で体格が共通なので使えない**（オフのまま操作不可）、
+   * エラー比較は押下状態で、押すとデッドリフト版へ戻る。
+   */
+  readonly compare: string
+  readonly errLink: string
   /** 行見出し */
   readonly bodyRow: string
   /**
@@ -76,7 +83,8 @@ const ja: ErrStrings = {
   title: 'Midfoot デッドリフトのエラー例',
   navSquat: 'スクワット',
   navDeadlift: 'デッドリフト',
-  crumb: 'エラー例',
+  compare: '体格比較',
+  errLink: 'エラー比較',
   bodyRow: '体格（両者共通）',
   // 2026-08-07 の文言見直し（想定読者を**指導者**に定め、解剖・運動学の用語をそのまま使う）。
   // 「両者共通」→「共通条件」: 左右の図に共通して掛かる条件であることを明示する
@@ -167,7 +175,8 @@ const en: ErrStrings = {
   title: 'Midfoot — Deadlift error examples',
   navSquat: 'Squat',
   navDeadlift: 'Deadlift',
-  crumb: 'Error examples',
+  compare: 'Compare builds',
+  errLink: 'Compare errors',
   bodyRow: 'Proportions (shared)',
   // 2026-08-07: 日本語に合わせて英語も指導者向けの用語へ。3 ページで同じ語を使う
   sharedRow: 'Shared',

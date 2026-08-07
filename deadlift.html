@@ -18,8 +18,7 @@
     <div id="app">
       <!--
         ヘッダー。サイト名・種目ナビ・言語切替。
-        現在地はナビのハイライト（aria-current）で示す。エラー例はデッドリフトの
-        下位ページなので、ナビはデッドリフトを選択状態にしたうえで crumb を足す。
+        現在地はナビのハイライト（aria-current）で示す。
         文言と href は app.ts が入れる（言語を ?lang= で引き継ぐため）。
       -->
       <header class="topbar">
@@ -28,7 +27,6 @@
           <a data-page="squat" href="index.html"></a>
           <a data-page="deadlift" href="deadlift.html"></a>
         </nav>
-        <span class="crumb" id="crumb" hidden></span>
         <div class="topbar-right">
           <div class="seg lang" id="lang" role="group">
             <button data-v="ja">JA</button>
@@ -50,7 +48,9 @@
         <div class="corner bottomleft">
           <button class="cornerbtn" id="compareBtn" aria-pressed="false"></button>
           <!-- エラー例のページへ。文言と表示可否（日本語のときだけ）は app.ts が決める -->
-          <a class="cornerbtn ghost link" id="errLink" href="deadlift-errors.html"></a>
+          <!-- 「比較」と同じ見た目にする（2026-08-07）。押すとエラー例へ入り、
+               向こうでは押下状態になっていて、もう一度押すとここへ戻る -->
+          <a class="cornerbtn link" id="errLink" href="deadlift-errors.html"></a>
         </div>
       </section>
 

@@ -681,10 +681,29 @@ function buildLiftRow(): void {
   })
 }
 
+/**
+ * 体格比較の開始／終了。開始時はペインBをペインAの完全なコピーにする。
+ * ペインUIの閉包が `state.panes[1]` を参照し続けるので、差し替えではなく上書きする。
+ *
+ * ボタンからも `?compare=1` での起動からも同じ経路を通したいので関数に出してある。
+ */
+function setComparing(on: boolean): void {
+  state.comparing = on
+  if (!on) return
+  const a = state.panes[0]
+  Object.assign(state.panes[1], { ...a, body: { ...a.body } })
+  pushPane(1, 0)
+}
+
 function init(): void {
   // URL 共有は持たないが、種目間リンクが付ける ?lang= だけは読む（スクワット版と同じ規約）
-  const lang = asLang(new URLSearchParams(location.search).get('lang'))
+  const params = new URLSearchParams(location.search)
+  const lang = asLang(params.get('lang'))
   if (lang) setLang(lang)
+
+  // エラー比較ページの「体格比較」ボタンから、比較モードで開いた状態へ直接来られるようにする
+  // （2026-08-07）。2 つの比較モードを行き来する導線で、ここだけ ?compare= を読む
+  if (params.get('compare') === '1') setComparing(true)
 
   // 文言に依存する DOM の生成はすべて applyLang に集約する（切替時に同じ経路を通る）
   applyLang()
@@ -698,14 +717,7 @@ function init(): void {
   })
 
   compareBtn.addEventListener('click', () => {
-    state.comparing = !state.comparing
-    if (state.comparing) {
-      // 比較開始時はペインBをペインAの完全なコピーとして始める。
-      // ペインUIの閉包が state.panes[1] を参照し続けるので、差し替えではなく上書きする
-      const a = state.panes[0]
-      Object.assign(state.panes[1], { ...a, body: { ...a.body } })
-      pushPane(1, 0)
-    }
+    setComparing(!state.comparing)
     sync()
     requestFrame()
   })

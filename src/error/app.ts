@@ -117,7 +117,18 @@ const liftRow = $<HTMLDivElement>('#liftRow')
 const panel = $<HTMLDivElement>('#errPanel')
 const langSeg = $<HTMLDivElement>('#lang')
 const navEl = $<HTMLElement>('#nav')
-const crumb = $<HTMLSpanElement>('#crumb')
+/**
+ * 図の左下の「エラー比較」ボタン（2026-08-07）。デッドリフト版の同名ボタンと同じ位置・
+ * 同じ見た目で、こちらでは**押下状態**にしてある。押すとデッドリフト版へ戻る
+ * （押すと入る・もう一度押すと出る、という「体格比較」と同じ挙動）。
+ */
+const errLink = $<HTMLAnchorElement>('#errLink')
+/**
+ * 「体格比較」ボタン（2026-08-07）。このページは左右で体格が共通なので体格比較は
+ * **オフ**で、押すとデッドリフト版の体格比較モードへ直接入る（`?compare=1`）。
+ * エラー比較 ⇔ 体格比較 を 1 タップで行き来できる。
+ */
+const compareBtn = $<HTMLAnchorElement>('#compareBtn')
 /**
  * 種目ナビ（Rev.15）。現在地を `aria-current` でハイライトし、リンクには言語を引き継ぐ。
  * `?lang=` の規約は 3 ページ共通で、既定の `ja` は付けない。
@@ -274,16 +285,23 @@ const romSeg = buildSeg(
   },
   () => t().aria.rom,
 )
+/**
+ * 小見出しとボタン群は**必ず 1 つの塊**にする（2026-08-07）。
+ * 素で並べると、狭い画面で行が折り返したときに小見出しだけが前の行の末尾に残り、
+ * 「体節比」と［標準］［大腿長型］…が離れてしまう（スマホで実際に起きた）。
+ * `.labeled-seg` はスクワット版・デッドリフト版が同じ目的で使っているものと同じ。
+ */
+const labeled = (label: HTMLElement, seg: HTMLElement): HTMLDivElement => {
+  const box = el('div', 'labeled-seg')
+  box.append(label, seg)
+  return box
+}
 bodyRow.append(
   bodyRowLabel,
-  presetRowLabel,
-  presetSeg.seg,
-  armRowLabel,
-  armSeg.seg,
-  romRowLabel,
-  romSeg.seg,
-  stanceRowLabel,
-  stanceSeg.seg,
+  labeled(presetRowLabel, presetSeg.seg),
+  labeled(armRowLabel, armSeg.seg),
+  labeled(romRowLabel, romSeg.seg),
+  labeled(stanceRowLabel, stanceSeg.seg),
 )
 
 // --- エラー（カタログ ＋ 程度）------------------------------------------------
@@ -311,7 +329,7 @@ const levelSeg = buildSeg(
 )
 // 「最大乖離点へ飛ぶ」ボタンは置かない。エラーは床を離れた直後にはもう出ていて、
 // 乖離が最大になる時点を探すより前に問題は見えているため（2026-08-03 判断）。
-errRow.append(errRowLabel, errSeg.seg, levelLabel, levelSeg.seg)
+errRow.append(errRowLabel, errSeg.seg, labeled(levelLabel, levelSeg.seg))
 
 // 「詳細」は体格・エラーと同じ行の作り（左に見出し、右に中身）にする
 const whatRow = el('div', 'row whatrow')
@@ -389,10 +407,15 @@ function applyLang(): void {
   setFigureLang(getLang())
   document.documentElement.lang = getLang()
   document.title = s.title
-  // エラー例はデッドリフトの下位ページ。ナビはデッドリフトを選択したまま crumb を足す
+  // エラー例はデッドリフトの下位ページ。ナビはデッドリフトを選択したままにする
   applyNav('deadlift', { squat: s.navSquat, deadlift: s.navDeadlift })
-  crumb.textContent = s.crumb
-  crumb.hidden = false
+  // 押下状態の「エラー例」ボタン。押すとデッドリフト版へ戻る（言語は引き継ぐ）
+  errLink.textContent = s.errLink
+  errLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
+  // 体格比較へ。言語も引き継ぐ（?lang= の規約は 3 ページ共通で、既定の ja は付けない）
+  compareBtn.textContent = s.compare
+  compareBtn.href =
+    getLang() === 'ja' ? 'deadlift.html?compare=1' : `deadlift.html?compare=1&lang=${getLang()}`
   bodyRowLabel.textContent = s.sharedRow
   presetRowLabel.textContent = s.buildLabel
   armRowLabel.textContent = s.armLabel

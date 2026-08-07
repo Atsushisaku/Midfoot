@@ -62,7 +62,7 @@ export interface Strings {
 
 const ja: Strings = {
   title: 'スクワット姿勢可視化',
-  compare: '比較',
+  compare: '体格比較',
   notes: '注記',
   close: '閉じる',
   navSquat: 'スクワット',
@@ -127,7 +127,7 @@ const ja: Strings = {
 
 const en: Strings = {
   title: 'Squat Posture Visualizer',
-  compare: 'Compare',
+  compare: 'Compare builds',
   notes: 'Notes',
   close: 'Close',
   navSquat: 'Squat',

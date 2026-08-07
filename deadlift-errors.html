@@ -23,8 +23,9 @@
     <div id="app">
       <!--
         ヘッダー。サイト名・種目ナビ・言語切替。
-        現在地はナビのハイライト（aria-current）で示す。エラー例はデッドリフトの
-        下位ページなので、ナビはデッドリフトを選択状態にしたうえで crumb を足す。
+        エラー例はデッドリフトの下位ページなので、ナビはデッドリフトを選択状態にする。
+        エラー例にいること自体は図の左下のボタンの押下状態で示す（狭い画面で
+        ヘッダーに文字を足すと種目ナビが潰れるため）。
         文言と href は app.ts が入れる（言語を ?lang= で引き継ぐため）。
       -->
       <header class="topbar">
@@ -33,7 +34,6 @@
           <a data-page="squat" href="index.html"></a>
           <a data-page="deadlift" href="deadlift.html"></a>
         </nav>
-        <span class="crumb" id="crumb" hidden></span>
         <div class="topbar-right">
           <div class="seg lang" id="lang" role="group">
             <button data-v="ja">JA</button>
@@ -43,6 +43,22 @@
       </header>
       <section class="stage">
         <svg id="fig" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+        <!--
+          現在地は「エラー例」ボタンの押下状態で示す（2026-08-07）。
+          以前はヘッダーに `› エラー例` を足していたが、狭い画面で種目ナビを潰していた。
+          デッドリフト版と同じ位置・同じ見た目のボタンにして、押すと戻れるようにする
+          （「比較」と同じ挙動）。文言と href は app.ts が入れる。
+        -->
+        <div class="corner bottomleft">
+          <!--
+            2 つの比較モードを行き来する導線（2026-08-07）。このページは左右で体格が
+            共通なので体格比較は**オフ**で、押すとデッドリフト版の体格比較モードへ
+            そのまま入る（`?compare=1`）。エラー比較のほうは押下状態で、押すと素の
+            デッドリフト版へ戻る。どちらも位置と見た目はデッドリフト版と同じ。
+          -->
+          <a class="cornerbtn link" id="compareBtn" href="deadlift.html?compare=1"></a>
+          <a class="cornerbtn link" id="errLink" data-on="true" href="deadlift.html"></a>
+        </div>
       </section>
 
       <section class="controls">
