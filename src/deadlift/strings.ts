@@ -123,10 +123,10 @@ const ja: DlStrings = {
     lang: '言語',
   },
   notesList: [
-    'スタンスの開きは、前額面（正面から見た脚の開き）を<strong>矢状面へ射影した見なし</strong>で表している。3次元の動きをそのまま解いているわけではない。図の中の<strong>つま先の向き（床の下の足型）・靴の短縮・腕が脚の手前か奥か</strong>も、横からの1枚では描けない開きを補うための描画上の見なしで、幾何の計算には入っていない。',
-    '模範フォームの決め方は「バーは中足部の真上」「身体重心はかかと寄りの標準位置」「シャフトが脛に触れる」の3つ。これで姿勢は閉じるので、<strong>腰の高さも腕の角度も肩の位置も、選ぶものではなく体格から決まる出力</strong>になる（「腕は鉛直」のようなルールは使っていない）。',
-    '身体とバーを合わせた重心（COP）は、バーと身体重心の<strong>間</strong>に落ちる。バーが重いほどバー寄りになるので、バランスに必要なのは合成重心が<strong>足の上（支持基底の中）</strong>にあること。体節の質量比は Winter の標準値を使った見なし。',
-    '背中の丸みは、<strong>体格が要求する前屈の深さが股関節の可動域を超えたぶん</strong>を腰椎の曲がりとして描いた見なし。可動域そのものを解いているわけではなく、3択の値も<strong>集団の代表値で個人差が大きい</strong>（あなたの実測値ではない）。胸の高さの丸みは<strong>正常な胸椎の後弯</strong>で、可動域に収まっていても常に描かれる。丸みがある＝エラー、ではない。',
+    'スタンスの開きは、前額面（正面から見た脚の開き）を<strong>矢状面へ射影して置き換えたもの</strong>で、3 次元の動きをそのまま解いているわけではない。図の中の<strong>つま先の向き（床の下の足型）・靴を短く描くこと・腕を脚の手前と奥のどちらに描くか</strong>も、横からの 1 枚では開きを表せないことを補うための約束事で、幾何の計算には入っていない。',
+    '模範フォームは「バーは中足部の真上」「身体重心はかかと寄りの標準位置」「シャフトが脛に触れる」の 3 つで決めている。この 3 つで姿勢が一つに決まるため、<strong>腰の高さも腕の角度も肩の位置も、選ぶものではなく体格から決まる結果</strong>になる（「腕は鉛直」のようなルールは使っていない）。',
+    '身体とバーを合わせた重心は、バーと身体重心の<strong>間</strong>にあり、バーが重いほどバー側へ近づく。したがってバランスの条件は、バーが足のどこにあるかではなく<strong>この合成重心が足の上（支持基底の中）にあること</strong>。体節の質量比は Winter の標準値をそのまま当てはめている。',
+    '背中の丸みは、<strong>体格が要求する前屈の深さが股関節の可動域を超えたぶん</strong>を腰椎の曲がりとして描いたもので、可動域そのものを解いているわけではない。3 択の値も<strong>集団の代表値で個人差が大きく</strong>、個人の実測値ではない。胸のあたりの丸みは<strong>正常な胸椎の後弯</strong>で、可動域に収まっていても常に描かれる。丸みがあること自体はエラーではない。',
   ],
 }
 
@@ -176,7 +176,7 @@ const en: DlStrings = {
   notesList: [
     'Stance width is shown as <strong>a projection of the frontal-plane leg spread onto the sagittal plane</strong>. The model does not solve the three-dimensional movement itself. The <strong>toe direction (the footprint below the floor), the shortened shoe, and whether the arm is drawn in front of or behind the leg</strong> are drawing conventions for the same reason — a single side view cannot show the spread — and none of them enter the geometry.',
     'The reference form is fixed by three cues: the bar sits over the midfoot, the body’s center of mass sits at its standard position toward the heel, and the shaft touches the shin. Those close the pose, so <strong>hip height, arm angle and shoulder position are not things you choose but outputs of your proportions</strong> (no rule such as “the arms hang vertically” is used).',
-    'The combined center of mass of body and bar (COP) falls <strong>between</strong> the bar and the body’s center of mass, and moves toward the bar as the load gets heavier. What balance requires is that this combined center stays <strong>over the foot (inside the base of support)</strong>. Segment mass ratios use Winter’s standard values as an approximation.',
+    'The combined center of mass of body and bar falls <strong>between</strong> the bar and the body’s center of mass, and moves toward the bar as the load gets heavier. What balance requires is that this combined center stays <strong>over the foot (inside the base of support)</strong>. Segment mass ratios use Winter’s standard values as an approximation.',
     'The rounding of the back is drawn as an approximation: <strong>whatever part of the forward bend your proportions demand exceeds your hip range of motion</strong> is shown as lumbar flexion. The range itself is not solved for, and the three levels are <strong>population averages with wide individual variation</strong> — not your own measurement. The gentle rounding at chest height is the <strong>normal thoracic curve</strong> and is drawn even when the bend stays within range. Rounding is not the same thing as an error.',
   ],
 }
