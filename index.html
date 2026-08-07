@@ -20,8 +20,7 @@
     <div id="app">
       <!--
         ヘッダー。サイト名・種目ナビ・言語切替。
-        現在地はナビのハイライト（aria-current）で示す。エラー例はデッドリフトの
-        下位ページなので、ナビはデッドリフトを選択状態にしたうえで crumb を足す。
+        現在地はナビのハイライト（aria-current）で示す。
         文言と href は app.ts が入れる（言語を ?lang= で引き継ぐため）。
       -->
       <header class="topbar">
@@ -30,7 +29,6 @@
           <a data-page="squat" href="index.html"></a>
           <a data-page="deadlift" href="deadlift.html"></a>
         </nav>
-        <span class="crumb" id="crumb" hidden></span>
         <div class="topbar-right">
           <div class="seg lang" id="lang" role="group">
             <button data-v="ja">JA</button>
