@@ -124,11 +124,11 @@ const navEl = $<HTMLElement>('#nav')
  */
 const errLink = $<HTMLAnchorElement>('#errLink')
 /**
- * 「体格比較」ボタン（2026-08-07）。デッドリフト版と同じ位置に置いて、行き来しても
- * ボタンが増減しないようにする。ただしこのページは左右で体格が共通なので体格比較は
- * できず、**オフのまま操作不可**（HTML 側で `disabled`）。文言だけ入れる。
+ * 「体格比較」ボタン（2026-08-07）。このページは左右で体格が共通なので体格比較は
+ * **オフ**で、押すとデッドリフト版の体格比較モードへ直接入る（`?compare=1`）。
+ * エラー比較 ⇔ 体格比較 を 1 タップで行き来できる。
  */
-const compareBtn = $<HTMLButtonElement>('#compareBtn')
+const compareBtn = $<HTMLAnchorElement>('#compareBtn')
 /**
  * 種目ナビ（Rev.15）。現在地を `aria-current` でハイライトし、リンクには言語を引き継ぐ。
  * `?lang=` の規約は 3 ページ共通で、既定の `ja` は付けない。
@@ -412,7 +412,10 @@ function applyLang(): void {
   // 押下状態の「エラー例」ボタン。押すとデッドリフト版へ戻る（言語は引き継ぐ）
   errLink.textContent = s.errLink
   errLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
+  // 体格比較へ。言語も引き継ぐ（?lang= の規約は 3 ページ共通で、既定の ja は付けない）
   compareBtn.textContent = s.compare
+  compareBtn.href =
+    getLang() === 'ja' ? 'deadlift.html?compare=1' : `deadlift.html?compare=1&lang=${getLang()}`
   bodyRowLabel.textContent = s.sharedRow
   presetRowLabel.textContent = s.buildLabel
   armRowLabel.textContent = s.armLabel

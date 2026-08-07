@@ -51,11 +51,12 @@
         -->
         <div class="corner bottomleft">
           <!--
-            「体格比較」もデッドリフト版と同じ位置に残す（2026-08-07）。行き来してボタンが
-            増減すると落ち着かないため。ただしこのページは**左右で体格が共通**（同一人物の
-            模範とエラーを並べている）ので体格比較はできない。**オフのまま操作不可**にする。
+            2 つの比較モードを行き来する導線（2026-08-07）。このページは左右で体格が
+            共通なので体格比較は**オフ**で、押すとデッドリフト版の体格比較モードへ
+            そのまま入る（`?compare=1`）。エラー比較のほうは押下状態で、押すと素の
+            デッドリフト版へ戻る。どちらも位置と見た目はデッドリフト版と同じ。
           -->
-          <button class="cornerbtn" id="compareBtn" aria-pressed="false" disabled></button>
+          <a class="cornerbtn link" id="compareBtn" href="deadlift.html?compare=1"></a>
           <a class="cornerbtn link" id="errLink" data-on="true" href="deadlift.html"></a>
         </div>
       </section>
