@@ -70,12 +70,12 @@ export interface DlStrings {
 
 const ja: DlStrings = {
   title: 'Midfoot デッドリフト',
-  compare: '比較',
+  compare: '体格比較',
   notes: '注記',
   close: '閉じる',
   navSquat: 'スクワット',
   navDeadlift: 'デッドリフト',
-  errLink: 'エラー例',
+  errLink: 'エラー比較',
   // 2026-08-07 の文言見直し（想定読者を**指導者**に定め、解剖・運動学の用語に揃える）。
   // 3 ページで同じ語を使うため、エラー例ページと対応させてある。
   // 「簡易｜詳細」の `detail` は表示モードの名前なので触らない（エラー例の「所見」とは別物）
@@ -132,12 +132,12 @@ const ja: DlStrings = {
 
 const en: DlStrings = {
   title: 'Midfoot Deadlift',
-  compare: 'Compare',
+  compare: 'Compare builds',
   notes: 'Notes',
   close: 'Close',
   navSquat: 'Squat',
   navDeadlift: 'Deadlift',
-  errLink: 'Error examples',
+  errLink: 'Compare errors',
   // 2026-08-07: 日本語に合わせて英語も指導者向けの用語へ。3 ページで同じ語を使う
   bodySection: 'Proportions & ROM',
   setupSection: 'Setup',

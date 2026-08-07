@@ -118,15 +118,15 @@ const panel = $<HTMLDivElement>('#errPanel')
 const langSeg = $<HTMLDivElement>('#lang')
 const navEl = $<HTMLElement>('#nav')
 /**
- * 図の左下の「エラー例」ボタン（2026-08-07）。デッドリフト版の同名ボタンと同じ位置・
+ * 図の左下の「エラー比較」ボタン（2026-08-07）。デッドリフト版の同名ボタンと同じ位置・
  * 同じ見た目で、こちらでは**押下状態**にしてある。押すとデッドリフト版へ戻る
- * （「比較」と同じ、押すと入る・もう一度押すと出る、という挙動）。
+ * （押すと入る・もう一度押すと出る、という「体格比較」と同じ挙動）。
  */
 const errLink = $<HTMLAnchorElement>('#errLink')
 /**
- * 「比較」ボタン（2026-08-07）。デッドリフト版と同じ位置に置いて、行き来しても
- * ボタンが増減しないようにする。このページは常に模範とエラーを並べていて比較を
- * 解除できないので、**押下状態のまま操作不可**（HTML 側で `disabled`）。文言だけ入れる。
+ * 「体格比較」ボタン（2026-08-07）。デッドリフト版と同じ位置に置いて、行き来しても
+ * ボタンが増減しないようにする。ただしこのページは左右で体格が共通なので体格比較は
+ * できず、**オフのまま操作不可**（HTML 側で `disabled`）。文言だけ入れる。
  */
 const compareBtn = $<HTMLButtonElement>('#compareBtn')
 /**
@@ -410,7 +410,7 @@ function applyLang(): void {
   // エラー例はデッドリフトの下位ページ。ナビはデッドリフトを選択したままにする
   applyNav('deadlift', { squat: s.navSquat, deadlift: s.navDeadlift })
   // 押下状態の「エラー例」ボタン。押すとデッドリフト版へ戻る（言語は引き継ぐ）
-  errLink.textContent = s.crumb
+  errLink.textContent = s.errLink
   errLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
   compareBtn.textContent = s.compare
   bodyRowLabel.textContent = s.sharedRow

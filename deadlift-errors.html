@@ -51,11 +51,11 @@
         -->
         <div class="corner bottomleft">
           <!--
-            「比較」もデッドリフト版と同じ位置に残す（2026-08-07）。行き来してボタンが
-            増減すると落ち着かないため。このページは常に模範とエラーの 2 体を並べていて
-            比較を解除できないので、**押下状態のまま操作不可**にする（`disabled`）。
+            「体格比較」もデッドリフト版と同じ位置に残す（2026-08-07）。行き来してボタンが
+            増減すると落ち着かないため。ただしこのページは**左右で体格が共通**（同一人物の
+            模範とエラーを並べている）ので体格比較はできない。**オフのまま操作不可**にする。
           -->
-          <button class="cornerbtn" id="compareBtn" data-on="true" aria-pressed="true" disabled></button>
+          <button class="cornerbtn" id="compareBtn" aria-pressed="false" disabled></button>
           <a class="cornerbtn link" id="errLink" data-on="true" href="deadlift.html"></a>
         </div>
       </section>
