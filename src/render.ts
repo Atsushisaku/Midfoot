@@ -477,7 +477,8 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
       line(
         { x: i * half + 30, y: FLOOR_Y },
         { x: (i + 1) * half - 30, y: FLOOR_Y },
-        { stroke: COLORS.floor, 'stroke-width': 2 },
+        // `class` は左下のボタンと重なっていないかを測るための目印（`cornerfit.ts`）
+        { stroke: COLORS.floor, 'stroke-width': 2, class: 'floor' },
       ),
     )
   }
