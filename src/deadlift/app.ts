@@ -350,6 +350,11 @@ function buildPane(i: 0 | 1): PaneUI {
   const head = el('div', 'row row-buttons')
   head.append(el('span', 'section-label', t().bodySection), modeSeg)
 
+  // 体型プリセットにもラベルを付ける（2026-08-07）。腕・股関節屈曲だけラベル付きだと、
+  // 左のボタン群が何の 3 択なのか分からない。エラー例ページと同じ「体節比」を使う
+  const buildLabeled = el('div', 'labeled-seg')
+  buildLabeled.append(el('span', 'seg-label', t().build), presetSeg)
+
   const armLabeled = el('div', 'labeled-seg')
   armLabeled.append(el('span', 'seg-label', t().arm), armSeg)
 
@@ -357,7 +362,7 @@ function buildPane(i: 0 | 1): PaneUI {
   romLabeled.append(el('span', 'seg-label', t().rom), romSeg)
 
   const simpleRow = el('div', 'row row-buttons')
-  simpleRow.append(presetSeg, armLabeled, romLabeled)
+  simpleRow.append(buildLabeled, armLabeled, romLabeled)
 
   const slidersRow = el('div', 'row sliders')
   slidersRow.hidden = true
