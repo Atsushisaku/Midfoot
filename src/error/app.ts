@@ -32,6 +32,7 @@ import { ROM_LEVELS, lumbarSpineOf, type SpineOptions } from '../deadlift/spine'
 import { CATALOG, NO_DEVIATION, type Deviation, type Level } from './catalog'
 import { errorKappaOf, fadedKappaAddDeg } from './kappa'
 import { asLang, getLang, setLang, t, type Lang } from './strings'
+import { watchSegs } from '../segfit'
 import '../style.css'
 
 const state = {
@@ -447,3 +448,5 @@ langSeg.addEventListener('click', (ev) => {
 applyLang()
 syncLift()
 render()
+// 文言と幅が確定してから、収まらないボタン群だけを折り返しへ切り替える
+watchSegs()

@@ -21,6 +21,7 @@ import {
 import { COLORS, renderScene, type Scene, type SceneBody } from './render'
 import { lumbarSpineOf } from './spine'
 import { asLang, getLang, setLang, t, type Lang } from './strings'
+import { fitSegs, watchSegs } from '../segfit'
 
 /** 補間アニメーションの長さ（スクワット版 §8.1 と同じ） */
 const DUR = 300
@@ -559,6 +560,8 @@ function sync(): void {
   compareBtn.dataset['on'] = String(state.comparing)
   liftInput.value = String(state.lift)
   press(langSeg, getLang())
+  // 比較の開始／終了や簡易⇔詳細で使える幅が変わるので、そのつど測り直す
+  fitSegs()
 }
 
 /**
@@ -596,6 +599,8 @@ function applyLang(): void {
   panes = [buildPane(0), buildPane(1)]
   buildLiftRow()
   sync()
+  // 作り直した直後の幅で測る（言語で文言の長さが変わる）
+  fitSegs()
 }
 
 // ---------------------------------------------------------------------------
@@ -733,3 +738,5 @@ function init(): void {
 }
 
 init()
+// 画面幅の変化にも追従させる
+watchSegs()
