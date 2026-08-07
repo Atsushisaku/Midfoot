@@ -50,6 +50,12 @@
           （「比較」と同じ挙動）。文言と href は app.ts が入れる。
         -->
         <div class="corner bottomleft">
+          <!--
+            「比較」もデッドリフト版と同じ位置に残す（2026-08-07）。行き来してボタンが
+            増減すると落ち着かないため。このページは常に模範とエラーの 2 体を並べていて
+            比較を解除できないので、**押下状態のまま操作不可**にする（`disabled`）。
+          -->
+          <button class="cornerbtn" id="compareBtn" data-on="true" aria-pressed="true" disabled></button>
           <a class="cornerbtn link" id="errLink" data-on="true" href="deadlift.html"></a>
         </div>
       </section>

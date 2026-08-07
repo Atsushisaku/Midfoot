@@ -20,6 +20,8 @@ export interface ErrStrings {
   readonly navSquat: string
   readonly navDeadlift: string
   readonly crumb: string
+  /** 図の左下のボタン。このページでは常に押下状態で操作不可（比較は解除できない） */
+  readonly compare: string
   /** 行見出し */
   readonly bodyRow: string
   /**
@@ -77,6 +79,7 @@ const ja: ErrStrings = {
   navSquat: 'スクワット',
   navDeadlift: 'デッドリフト',
   crumb: 'エラー例',
+  compare: '比較',
   bodyRow: '体格（両者共通）',
   // 2026-08-07 の文言見直し（想定読者を**指導者**に定め、解剖・運動学の用語をそのまま使う）。
   // 「両者共通」→「共通条件」: 左右の図に共通して掛かる条件であることを明示する
@@ -168,6 +171,7 @@ const en: ErrStrings = {
   navSquat: 'Squat',
   navDeadlift: 'Deadlift',
   crumb: 'Error examples',
+  compare: 'Compare',
   bodyRow: 'Proportions (shared)',
   // 2026-08-07: 日本語に合わせて英語も指導者向けの用語へ。3 ページで同じ語を使う
   sharedRow: 'Shared',

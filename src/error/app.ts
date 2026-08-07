@@ -124,6 +124,12 @@ const navEl = $<HTMLElement>('#nav')
  */
 const errLink = $<HTMLAnchorElement>('#errLink')
 /**
+ * 「比較」ボタン（2026-08-07）。デッドリフト版と同じ位置に置いて、行き来しても
+ * ボタンが増減しないようにする。このページは常に模範とエラーを並べていて比較を
+ * 解除できないので、**押下状態のまま操作不可**（HTML 側で `disabled`）。文言だけ入れる。
+ */
+const compareBtn = $<HTMLButtonElement>('#compareBtn')
+/**
  * 種目ナビ（Rev.15）。現在地を `aria-current` でハイライトし、リンクには言語を引き継ぐ。
  * `?lang=` の規約は 3 ページ共通で、既定の `ja` は付けない。
  */
@@ -406,6 +412,7 @@ function applyLang(): void {
   // 押下状態の「エラー例」ボタン。押すとデッドリフト版へ戻る（言語は引き継ぐ）
   errLink.textContent = s.crumb
   errLink.href = getLang() === 'ja' ? 'deadlift.html' : `deadlift.html?lang=${getLang()}`
+  compareBtn.textContent = s.compare
   bodyRowLabel.textContent = s.sharedRow
   presetRowLabel.textContent = s.buildLabel
   armRowLabel.textContent = s.armLabel
