@@ -22,6 +22,7 @@ import { COLORS, renderScene, type Scene, type SceneBody } from './render'
 import { lumbarSpineOf } from './spine'
 import { asLang, getLang, setLang, t, type Lang } from './strings'
 import { fitSegs, watchSegs } from '../segfit'
+import { watchCorner } from '../cornerfit'
 
 /** 補間アニメーションの長さ（スクワット版 §8.1 と同じ） */
 const DUR = 300
@@ -740,3 +741,5 @@ function init(): void {
 init()
 // 画面幅の変化にも追従させる
 watchSegs()
+// 左下のボタンが床線に乗る縦横比のときだけ、図の下に帯を空ける
+watchCorner()

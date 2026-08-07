@@ -33,6 +33,7 @@ import { CATALOG, NO_DEVIATION, type Deviation, type Level } from './catalog'
 import { errorKappaOf, fadedKappaAddDeg } from './kappa'
 import { asLang, getLang, setLang, t, type Lang } from './strings'
 import { watchSegs } from '../segfit'
+import { watchCorner } from '../cornerfit'
 import '../style.css'
 
 const state = {
@@ -297,8 +298,14 @@ const labeled = (label: HTMLElement, seg: HTMLElement): HTMLDivElement => {
   box.append(label, seg)
   return box
 }
+/**
+ * 見出しは**独立した 1 行**にする（2026-08-07）。行の左に置くと、PC では
+ * 「共通条件」のすぐ横に「体節比」の小見出しが並んで、どこまでが見出しなのか
+ * 読めなかった。スクワット版・デッドリフト版の「体格・可動域」と同じ作りに揃える。
+ */
+const bodyHead = el('div', 'row row-head')
+bodyHead.append(bodyRowLabel)
 bodyRow.append(
-  bodyRowLabel,
   labeled(presetRowLabel, presetSeg.seg),
   labeled(armRowLabel, armSeg.seg),
   labeled(romRowLabel, romSeg.seg),
@@ -338,7 +345,7 @@ const whatRowLabel = el('strong', 'rowlabel')
 const whatList = el('ul', 'whatlist')
 whatRow.append(whatRowLabel, whatList)
 
-panel.append(bodyRow, errRow, whatRow)
+panel.append(bodyHead, bodyRow, errRow, whatRow)
 
 // ---------------------------------------------------------------------------
 // 描画
@@ -450,3 +457,5 @@ syncLift()
 render()
 // 文言と幅が確定してから、収まらないボタン群だけを折り返しへ切り替える
 watchSegs()
+// 左下のボタンが床線に乗る縦横比のときだけ、図の下に帯を空ける
+watchCorner()

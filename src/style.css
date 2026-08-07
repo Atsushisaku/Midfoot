@@ -23,6 +23,8 @@
    * 上部中央に何かを戻すときは、ここを 62px（top 14 ＋ ボタン 42 ＋ 逃げ 6）に戻すこと。
    */
   --corner-band: 0px;
+  /* 図の下に空ける帯。既定は 0 で、必要なときだけ `.stage.reserve-bottom` が付ける */
+  --corner-band-bottom: 0px;
 }
 
 * {
@@ -159,10 +161,19 @@ body {
  */
 #fig {
   position: absolute;
-  inset: var(--corner-band) 0 0 0;
+  inset: var(--corner-band) 0 var(--corner-band-bottom) 0;
   width: 100%;
-  height: calc(100% - var(--corner-band));
+  height: calc(100% - var(--corner-band) - var(--corner-band-bottom));
   display: block;
+}
+
+/*
+ * 下の帯。左下のボタンが床線に乗るときだけ `cornerfit.ts` が付ける。
+ * 図（1000:620）と画面の縦横比が近いと図が枠いっぱいになり、床線がボタンまで
+ * 降りてくる。そのときだけ空けるので、広い画面で図が縮むことはない。
+ */
+.stage.reserve-bottom {
+  --corner-band-bottom: 74px;
 }
 
 /* 上体角度の数値は render.ts が SVG 内（各パネルの右下）に描く（Rev.10） */
@@ -615,6 +626,11 @@ body {
   font-size: 14px;
   flex: 0 0 auto;
   min-width: 9em;
+}
+
+/* 見出しだけの行。下の設定と離れすぎないよう詰める */
+#errPanel .row-head {
+  margin-bottom: -4px;
 }
 
 #errPanel .rowsub {
