@@ -108,9 +108,12 @@ const ja: ErrStrings = {
   // 角度の併記は見送った。ボタンが太って共通条件の行が 2 段に折り返し、図が縮むため（§13）
   romLevels: { 110: '硬め', 120: '標準', 130: '柔らかめ' },
   errors: {
-    // 「ぶっこ抜き」→「股関節の先行伸展」: 俗称ではなく、何が先行しているかを述べる
+    // 「ぶっこ抜き」→「膝の先行伸展」: 俗称ではなく、何が先行しているかを述べる。
+    // 2026-08-07 の見直しでいったん「股関節の先行伸展」としたが、**所見と矛盾していた**。
+    // 腰が上がるのは膝が先に伸びるからで、股関節はむしろ屈曲位に留まる（伸展していない）。
+    // 主指標が「脚の伸展の使用率」で先食いを捉えているのも同じ理由
     hipShoot: {
-      label: '股関節の先行伸展',
+      label: '膝の先行伸展',
       what: [
         '膝の伸展が股関節の伸展に先行し、体幹が水平化する',
         'ファーストプルで膝伸展を使い切るため、バーの膝関節通過後に停滞しやすい',
@@ -166,59 +169,61 @@ const en: ErrStrings = {
   navDeadlift: 'Deadlift',
   crumb: 'Error examples',
   bodyRow: 'Proportions (shared)',
+  // 2026-08-07: 日本語に合わせて英語も指導者向けの用語へ。3 ページで同じ語を使う
   sharedRow: 'Shared',
   errorRow: 'Error',
-  detailRow: 'Detail',
-  buildLabel: 'Build',
+  // 「所見」に合わせる（診たものを述べる、という含み）
+  detailRow: 'Findings',
+  buildLabel: 'Segments',
   armLabel: 'Arms',
   romLabel: 'Hip flexion',
   stanceLabel: 'Stance',
   levelLabel: 'Severity',
-  time: 'Time',
+  time: 'Lift progress',
   play: '▶ Play',
   stop: '■ Stop',
   none: 'None',
   noneComment: [
     'Both sides show the reference form',
-    'Pick an error above and only the right figure changes',
-    'Severity (mild / moderate / severe) can be switched too',
+    'Select an error and only the right figure switches to it',
+    'Severity (mild / moderate / severe) can also be selected',
   ],
   levels: ['Mild', 'Moderate', 'Severe'],
-  presets: { standard: 'Standard', 'long-femur': 'Long femur', 'long-torso': 'Long torso' },
-  armLevels: { 0.9: 'Short', 1: 'Standard', 1.1: 'Long' },
+  presets: { standard: 'Average', 'long-femur': 'Long femur', 'long-torso': 'Long torso' },
+  armLevels: { 0.9: 'Short', 1: 'Average', 1.1: 'Long' },
   stances: { 0: 'Narrow', 12: 'Middle', 35: 'Sumo' },
   romLevels: { 110: 'Stiff', 120: 'Average', 130: 'Flexible' },
   errors: {
     hipShoot: {
-      label: 'Hips shoot up',
+      label: 'Premature knee extension',
       what: [
-        'The hips rise first and the torso flattens',
-        'The legs are spent early, so the bar tends to stall around the knee',
-        'The shoulders drift forward, so the bar drifts away from the body',
+        'Knee extension leads hip extension, and the torso flattens toward horizontal',
+        'Knee extension is spent during the first pull, so the bar tends to stall once it passes the knee',
+        'The acromion travels forward, increasing the horizontal distance between the bar and the body’s center of mass',
       ],
     },
     upright: {
-      label: 'Torso too upright',
+      label: 'Excessively upright torso',
       what: [
-        'Trying to stay upright drops the hips',
-        'The legs barely extend, so the first pull feels heavy',
-        'The knees tend to travel forward, so the bar path is not vertical',
+        'Trying to keep the torso upright lowers the hips and deepens knee flexion',
+        'Little knee extension is left in reserve, so the first pull struggles to build ground reaction force',
+        'The knees travel forward, so the bar path deviates from vertical',
       ],
     },
     barFar: {
-      label: 'Bar too far away',
+      label: 'Forward bar path deviation',
       what: [
-        'The bar sits ahead of the midfoot',
-        'The posture itself is not broken',
-        'The load on the lower back and hips grows by exactly that distance',
+        'The bar sits anterior to the midfoot',
+        'The joint angles themselves stay close to the reference',
+        'The moment arms at the hip and the lumbar spine grow by exactly that offset',
       ],
     },
     roundBack: {
       label: 'Lumbar flexion',
       what: [
-        'The bar path and the hip height match the reference; only the rounding of the lower back differs',
-        'The pelvis stays tucked under (posteriorly tilted) through the hinge, so the rounding is concentrated in the lower back',
-        'It is slight at the setup, peaks as the bar passes the knees, and straightens out at lockout',
+        'The bar path and the hip height match the reference; only lumbar flexion differs',
+        'The pelvis stays posteriorly tilted as the hip flexes, so the flexion concentrates in the lumbar spine',
+        'Slight at the setup, greatest as the bar passes the knee, returning to neutral at lockout',
       ],
     },
   },
@@ -228,7 +233,7 @@ const en: ErrStrings = {
   legLate: 'extended (the legs are barely used)',
   aria: {
     lang: 'Language',
-    bodyPreset: 'Body type preset',
+    bodyPreset: 'Segment ratio preset',
     armLevel: 'Arm length',
     stance: 'Stance',
     rom: 'Hip flexion',
