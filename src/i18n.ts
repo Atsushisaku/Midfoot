@@ -22,6 +22,8 @@ export interface Strings {
   readonly toolSection: string
   readonly simple: string
   readonly detail: string
+  /** 体型プリセットのボタン群のラベル（2026-08-07。エラー例ページと同じ語） */
+  readonly build: string
   readonly ankle: string
   readonly depth: string
   readonly play: string
@@ -65,12 +67,18 @@ const ja: Strings = {
   close: '閉じる',
   navSquat: 'スクワット',
   navDeadlift: 'デッドリフト',
-  bodySection: '身体的特徴',
-  toolSection: '担ぎ方・シューズ',
+  // 2026-08-07 の文言見直し（想定読者を**指導者**に定め、解剖・運動学の用語に揃える）。
+  // 3 ページで同じ語を使うため、デッドリフト版・エラー例ページと対応させてある。
+  // 「簡易｜詳細」の `detail` は表示モードの名前なので触らない
+  bodySection: '体格・可動域',
+  // 「担ぎ方」は口語なので、担ぐ位置そのものを指す語にする
+  toolSection: 'バー位置・シューズ',
   simple: '簡易',
   detail: '詳細',
-  ankle: '足首',
-  depth: '深さ',
+  build: '体節比',
+  ankle: '足関節',
+  // 「深さ」→「しゃがみ深度」: デッドリフト版の「挙上進行度」と対になる進行量
+  depth: 'しゃがみ深度',
   play: '▶ 再生',
   stop: '■ 停止',
   highBar: 'ハイバー',
@@ -79,23 +87,28 @@ const ja: Strings = {
   sneaker: 'スニーカー',
   lifting: 'リフティング',
   femur: '大腿',
-  torso: '上体',
-  shank: 'すね',
-  rom: '足首の硬さ',
-  torsoAngle: '上体角度',
+  // 「上体」→「体幹」、「すね」→「下腿」: デッドリフト版のスライダー名と揃える
+  torso: '体幹',
+  shank: '下腿',
+  // 制限しているのは背屈の可動域なので、そう書く
+  rom: '足関節背屈 ROM',
+  // 基準を明記する。デッドリフト版の「背角（水平から）」と見比べて読み違えないため
+  torsoAngle: '体幹角（鉛直から）',
   toeLift: 'つま先が浮く',
-  torsoWarn: '現実的でない前傾',
+  torsoWarn: '非現実的な前傾角',
   presets: {
     standard: '標準',
-    'long-femur': '大腿が長い',
-    'long-torso': '上体が長い',
-    'long-shank': 'すねが長い',
+    // 体型の分類名として名詞化する
+    'long-femur': '大腿長型',
+    'long-torso': '体幹長型',
+    'long-shank': '下腿長型',
   },
-  ankleLevels: { 15: '硬め', 30: 'ふつう', 35: '柔らかめ' },
+  // 「ふつう」→「標準」: 3 ページで同じ語に揃える
+  ankleLevels: { 15: '硬め', 30: '標準', 35: '柔らかめ' },
   aria: {
     settingMode: '設定モード',
-    bodyPreset: '体型プリセット',
-    ankle: '足首の硬さ',
+    bodyPreset: '体節比プリセット',
+    ankle: '足関節背屈の可動域',
     barPosition: '担ぎ位置',
     shoes: 'シューズ',
     lang: '言語',
@@ -122,6 +135,7 @@ const en: Strings = {
   toolSection: 'Bar & shoes',
   simple: 'Simple',
   detail: 'Detailed',
+  build: 'Build',
   ankle: 'Ankle',
   depth: 'Depth',
   play: '▶ Play',

@@ -30,6 +30,8 @@ export interface DlStrings {
   readonly play: string
   readonly stop: string
   /** ボタン群のラベル */
+  /** 体型プリセットのボタン群のラベル（2026-08-07。エラー例ページと同じ語） */
+  readonly build: string
   readonly stance: string
   /** 股関節の屈曲（可動域）のボタン群のラベル */
   readonly rom: string
@@ -74,21 +76,27 @@ const ja: DlStrings = {
   navSquat: 'スクワット',
   navDeadlift: 'デッドリフト',
   errLink: 'エラー例',
-  bodySection: '身体的特徴',
-  setupSection: 'セッティング',
+  // 2026-08-07 の文言見直し（想定読者を**指導者**に定め、解剖・運動学の用語に揃える）。
+  // 3 ページで同じ語を使うため、エラー例ページと対応させてある。
+  // 「簡易｜詳細」の `detail` は表示モードの名前なので触らない（エラー例の「所見」とは別物）
+  bodySection: '体格・可動域',
+  setupSection: 'セットアップ',
   simple: '簡易',
   detail: '詳細',
-  lift: '挙上',
+  // 「挙上」→「挙上進行度」: バー高の進行を 0〜100% で表す量
+  lift: '挙上進行度',
   play: '▶ 再生',
   stop: '■ 停止',
+  build: '体節比',
   stance: 'スタンス',
-  rom: '股関節の屈曲',
+  rom: '股関節屈曲',
   femur: '大腿',
   torso: '体幹',
-  shank: 'すね',
+  // 「すね」→「下腿」
+  shank: '下腿',
   arm: '腕',
   stanceDeg: '開き角',
-  romDeg: '股関節の屈曲（°）',
+  romDeg: '股関節屈曲（°）',
   // 「水平から」を明記する。スクワット版の上体角度（鉛直から）とは基準が逆なので、
   // 単に「背角」とだけ書くと2つの図を見比べたときに読み違える
   backAngle: '背角（水平から）',
@@ -96,8 +104,9 @@ const ja: DlStrings = {
   reachWarn: 'この設定では釣り合えない（近い姿勢を表示）',
   presets: {
     standard: '標準',
-    'long-femur': '大腿が長い',
-    'long-torso': '体幹が長い',
+    // 体型の分類名として名詞化する
+    'long-femur': '大腿長型',
+    'long-torso': '体幹長型',
   },
   // ARM_LEVELS の倍率をそのままキーにする（String(1.0) は '1' になる点に注意）
   armLevels: { 0.9: '短い', 1: '標準', 1.1: '長い' },
@@ -105,11 +114,11 @@ const ja: DlStrings = {
   romLevels: { 110: '硬め', 120: '標準', 130: '柔らかめ' },
   stances: { 0: 'ナロー', 12: 'ミドル', 35: 'スモウ' },
   aria: {
-    bodyMode: '身体的特徴の表示モード',
-    setupMode: 'セッティングの表示モード',
-    bodyPreset: '体型プリセット',
+    bodyMode: '体格・可動域の表示モード',
+    setupMode: 'セットアップの表示モード',
+    bodyPreset: '体節比プリセット',
     armLevel: '腕の長さ',
-    romLevel: '股関節の屈曲の可動域',
+    romLevel: '股関節屈曲の可動域',
     stance: 'スタンス',
     lang: '言語',
   },
@@ -136,6 +145,7 @@ const en: DlStrings = {
   lift: 'Lift',
   play: '▶ Play',
   stop: '■ Stop',
+  build: 'Build',
   stance: 'Stance',
   rom: 'Hip flexion',
   femur: 'Femur',

@@ -419,9 +419,14 @@ function buildPane(i: 0 | 1): PaneUI {
   const labeled = el('div', 'labeled-seg')
   labeled.append(el('span', 'seg-label', t().ankle), ankleSeg)
 
+  // 体型プリセットにもラベルを付ける（2026-08-07）。足関節だけラベル付きだと、
+  // 左のボタン群が何の 4 択なのか分からない。エラー例ページと同じ「体節比」を使う
+  const buildLabeled = el('div', 'labeled-seg')
+  buildLabeled.append(el('span', 'seg-label', t().build), presetSeg)
+
   // 見出し（カテゴリ名＋簡易／詳細）と設定そのものは段を分ける（Rev.11）
   const simpleRow = el('div', 'row row-buttons')
-  simpleRow.append(presetSeg, labeled)
+  simpleRow.append(buildLabeled, labeled)
 
   const head = el('div', 'row row-buttons')
   head.append(el('span', 'section-label', t().bodySection), modeSeg)
