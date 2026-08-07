@@ -18,6 +18,7 @@ import { ANKLE_LEVELS, DEFAULT_PRESET, PRESETS, RANGES } from './presets'
 import { pelvisOf } from './pelvis'
 import { COLORS, renderScene, type Scene, type SceneBody } from './render'
 import { asLang, getLang, setLang, t, type Lang } from './i18n'
+import { fitSegs, watchSegs } from './segfit'
 
 /** 補間アニメーションの長さ（§8.1） */
 const DUR = 300
@@ -589,6 +590,8 @@ function sync(): void {
   compareBtn.dataset['on'] = String(state.comparing)
   depthInput.value = String(state.p)
   press(langSeg, getLang())
+  // 比較の開始／終了や簡易⇔詳細で使える幅が変わるので、そのつど測り直す
+  fitSegs()
 }
 
 /**
@@ -765,5 +768,7 @@ function init(): void {
 }
 
 init()
+// 画面幅の変化にも追従させる
+watchSegs()
 
 export type { Pose }

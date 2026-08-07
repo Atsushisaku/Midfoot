@@ -730,13 +730,14 @@ body {
 }
 
 /*
- * スマホではボタン群を折り返す（2026-08-07）。
+ * 幅に収まらないボタン群だけを折り返す（2026-08-07）。付け外しは `segfit.ts` が
+ * **実際に切れているかを測って**行う。収まっているものは 1 本のバーのまま。
  *
- * `.seg` は `overflow: hidden` の 1 本のバーなので、画面より広いと**右側が切れて
- * 見えなくなる**（エラーの 5 択が「バー軌道…」までしか出ていなかった）。横スクロールに
- * すると隠れていることに気づけないので、折り返して全部見せる。
+ * `.seg` は `overflow: hidden` の 1 本のバーなので、幅が足りないと右側が黙って切れる
+ * （スマホでエラーの 5 択が「バー軌道…」までしか出ていなかった）。横スクロールにすると
+ * 隠れていることに気づけないので、折り返して全部見せる。
  *
- * ただし**バーのまま折り返すと 2 つ壊れる**:
+ * ただし**バーの見た目のまま折り返すと 2 つ壊れる**:
  *   (a) 行の継ぎ目に区切り線が無く、上下の行が 1 つの塊に見える
  *       （`+ button` の左境界しか無いので、行をまたぐ境界が引かれない）
  *   (b) 最終行の右側に、枠だけの空白が大きく残る
@@ -745,21 +746,19 @@ body {
  * ボタンの数は選択によらず一定なので、**折り返しても高さは変わらない**＝図が動かない
  * （選ぶたびに図が動かないことを要件にしている §13 を満たす）。
  */
-@media (max-width: 760px) {
-  .seg.presets {
-    flex-wrap: wrap;
-    gap: 6px;
-    border: 0;
-    background: transparent;
-    overflow: visible;
-  }
+.seg.presets.is-wrapped {
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
 
-  /* `.seg button + button` の左境界より詳細度が高いので、全辺の枠がそのまま効く */
-  .seg.presets button {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg);
-  }
+/* `.seg button + button` の左境界より詳細度が高いので、全辺の枠がそのまま効く */
+.seg.presets.is-wrapped button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
 }
 
 /* 「程度」はエラー未選択でも場所を残し、選べないことだけ示す */
