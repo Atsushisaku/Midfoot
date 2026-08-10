@@ -15,7 +15,6 @@ import {
   type Shoe,
 } from './geometry'
 import { ANKLE_LEVELS, DEFAULT_PRESET, PRESETS, RANGES } from './presets'
-import { pelvisOf } from './pelvis'
 import { COLORS, renderScene, type Scene, type SceneBody } from './render'
 import { asLang, getLang, setLang, t, type Lang } from './i18n'
 import { fitSegs, watchSegs } from './segfit'
@@ -679,12 +678,6 @@ function draw(now: number): void {
       trail: [],
       color: i === 0 ? COLORS.bodyA : COLORS.bodyB,
       faded: false,
-      // 骨盤（3 ページ共通の三角）。スクワットは体幹を直線で描くので、
-      // 骨盤の「上」は股→肩の向きをそのまま使う（DL は脊柱下端の接線）
-      pelvis: pelvisOf(pose.hip, {
-        x: pose.shoulder.x - pose.hip.x,
-        y: pose.shoulder.y - pose.hip.y,
-      }),
     })
   }
 
