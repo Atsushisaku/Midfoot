@@ -20,11 +20,11 @@ const FLOOR_Y = 556
 
 /**
  * レイアウトごとのスケールと中足部の画面 x（§6：基準線は常に同じ位置）。
- * スケールは立位ゴーストの頭頂が画面上端に収まるように決めてある。
+ * スケールは立位（最も背が高くなる姿勢）の頭頂が画面上端に収まるように決めてある。
+ * 「重ねる」レイアウトは Rev.10 で廃止したので、残るのは 1 体と横並びだけ。
  */
 const CAMERAS = {
   single: [{ s: 410, midX: 500 }],
-  overlay: [{ s: 410, midX: 500 }],
   // 2体の間隔は広めに（midX 272/728 だと中央で近すぎた。指導者の指摘、Rev.10）
   side: [
     { s: 345, midX: 245 },
@@ -90,7 +90,6 @@ const LIMB_FILL = '#fff'
 export const COLORS = {
   bodyA: '#3b9de8',
   bodyB: '#ff8a66',
-  ghost: '#d3dae1',
   floor: '#9aa5ae',
   midline: '#9aa5ae',
   warn: '#7c3aed',
@@ -160,13 +159,7 @@ function text(
 
 export interface SceneBody {
   readonly pose: Pose
-  /** 立位ゴースト（§4.9）。null なら描かない */
-  readonly ghost: Pose | null
-  /** バーの軌跡（§8.2）。モデル座標 */
-  readonly trail: readonly Vec[]
   readonly color: string
-  /** 固定した体は薄く描く（§8.5） */
-  readonly faded: boolean
 }
 
 export interface Scene {
@@ -188,7 +181,6 @@ function drawFigure(
     opacity: number
     joints: boolean
     foot: boolean
-    tube: boolean
   },
 ): void {
   const P = (v: Vec) => toScreen(cam, v)
@@ -242,39 +234,9 @@ function drawFigure(
         fill: '#fff',
         stroke: color,
         opacity: opts.opacity,
-        'stroke-width': opts.tube ? LIMB_WALL * 2 : opts.width * 1.2,
+        'stroke-width': LIMB_WALL * 2,
       }),
     )
-  }
-
-  if (!opts.tube) {
-    // 立位ゴースト：簡素な線画のまま
-    out.push(
-      path([P(pose.ankle), P(pose.knee), P(pose.hip), P(pose.shoulder)], {
-        ...g,
-        ...cap,
-        'stroke-width': opts.width,
-      }),
-    )
-    out.push(
-      path(
-        [P(pose.shoulder), P({ x: headModel.x - up.x * HEAD_R, y: headModel.y - up.y * HEAD_R })],
-        { ...g, ...cap, 'stroke-width': opts.width * 0.8 },
-      ),
-    )
-    out.push(
-      el('circle', {
-        cx: head.x,
-        cy: head.y,
-        r: HEAD_R * cam.s,
-        fill: 'none',
-        ...g,
-        'stroke-width': opts.width,
-      }),
-    )
-    drawNose()
-    drawBar()
-    return
   }
 
   // --- デッサン人形式（Rev.7）：関節は独立した白抜き円、セグメントは縁から縁まで ---
@@ -462,38 +424,6 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
   // --- 体ごと ---
   scene.bodies.forEach((body, i) => {
     const cam = cams[i]!
-    const faded = body.faded
-    // 重ねたとき、固定した体は「後ろにある」と分かる程度に留める。
-    // 薄くしすぎると脚が操作中の体に完全に隠れて比較にならない
-    const opacity = faded ? 0.8 : 1
-
-    // 立位ゴースト
-    if (body.ghost) {
-      // 足は動かないのでゴースト側では描かない（実線の足部と完全に重なるだけ）
-      drawFigure(out, cam, body.ghost, COLORS.ghost, {
-        width: 3,
-        opacity: faded ? 0.4 : 0.85,
-        joints: false,
-        foot: false,
-        tube: false,
-      })
-    }
-
-    // バーの軌跡（§8.2：常に垂直線上を動くことを見せる）
-    for (const v of body.trail) {
-      const p = toScreen(cam, v)
-      out.push(
-        el('circle', {
-          cx: p.x,
-          cy: p.y,
-          r: BAR_R * cam.s,
-          fill: 'none',
-          stroke: body.color,
-          opacity: (faded ? 0.08 : 0.15).toFixed(2),
-          'stroke-width': 1.8,
-        }),
-      )
-    }
 
     // IPF 合格ライン（§4.7）
     if (scene.showIpfLine) {
@@ -515,14 +445,13 @@ export function renderScene(svg: SVGSVGElement, scene: Scene): void {
     }
 
     drawFigure(out, cam, body.pose, body.color, {
-      width: faded ? 10.5 : 12.5,
-      opacity,
+      width: 12.5,
+      opacity: 1,
       joints: true,
       foot: true,
-      tube: true,
     })
 
-    if (!faded) drawWarnings(out, cam, body.pose)
+    drawWarnings(out, cam, body.pose)
 
     // 上体角度（§6：数値表示はこれだけ）。各パネルの右下に、その体の色で描く
     const vx = ((i + 1) * VIEW_W) / panels - 40

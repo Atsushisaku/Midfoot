@@ -670,15 +670,9 @@ function draw(now: number): void {
       p: state.p,
     }
     const pose = solvePose(input)
-    bodies.push({
-      pose,
-      // 立位ゴーストとバーの軌跡は Rev.10 で廃止（§4.9 / §8.2）。
-      // どちらも本体以外の描き込みが「もう1人いる」等の誤読を生むため
-      ghost: null,
-      trail: [],
-      color: i === 0 ? COLORS.bodyA : COLORS.bodyB,
-      faded: false,
-    })
+    // 立位ゴーストとバーの軌跡は Rev.10 で廃止した（§4.9 / §8.2）。
+    // どちらも本体以外の描き込みが「もう1人いる」等の誤読を生むため
+    bodies.push({ pose, color: i === 0 ? COLORS.bodyA : COLORS.bodyB })
   }
 
   const scene: Scene = {

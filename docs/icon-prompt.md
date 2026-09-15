@@ -133,10 +133,6 @@ node scripts/record-demo.mjs ./out
 アプリ自身のアニメーション（300ms の補間）は原理的に captured できない。
 
 またこのツールは**フレーム間隔を指定できず、操作の実時間がそのまま間隔になる**
-（47 フレームで約3分の紙芝居になる）。`scripts/retime-gif.mjs` で GIF の
-delay を書き換えれば直せる：`node scripts/retime-gif.mjs in.gif out.gif 4 4`（40ms＝25fps）。
-
-> **`retime-gif.mjs` の実装注意**：GCE のサブブロックは
-> `[size=4][packed][delay lo][delay hi][transparent idx]` なので、
-> delay の書き込み先は size バイトの **+2**。+1（packed）に書くと廃棄方法まで
-> 壊れて、再生時間も意図しない値になる（一度この誤りで 5.4 秒が 18.5 秒になった）。
+（47 フレームで約3分の紙芝居になる）。GIF の delay を後から書き換えるスクリプトを書いて
+間隔だけは直したが、**フレーム数の上限とアニメーションが録れない問題は残る**ので、
+この経路ごと捨てた。スクリプト（`scripts/retime-gif.mjs`）も削除済み。

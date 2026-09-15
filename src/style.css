@@ -112,17 +112,6 @@ body {
   font-weight: 600;
 }
 
-/* 下位ページ名（エラー例）。ナビはデッドリフトを選択したまま、ここに足す */
-.crumb {
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.crumb::before {
-  content: '›';
-  margin-right: 8px;
-}
-
 /* ヘッダー右側（注記・言語切替）。ひとまとめにして右端へ寄せる */
 .topbar-right {
   margin-left: auto;
